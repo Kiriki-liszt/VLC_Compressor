@@ -6,7 +6,13 @@
 #include "VLCComp_cids.h"
 
 #include "base/source/fstreamer.h"
+#include "pluginterfaces/base/futils.h"
 #include "pluginterfaces/vst/ivstparameterchanges.h"
+#include "public.sdk/source/vst/vstaudioprocessoralgo.h"
+#include "public.sdk/source/vst/vsthelpers.h"
+
+#include <cstdio>
+#include <cmath>
 
 using namespace Steinberg;
 
@@ -51,21 +57,6 @@ tresult PLUGIN_API VLC_CompProcessor::initialize (FUnknown* context)
 tresult PLUGIN_API VLC_CompProcessor::terminate ()
 {
 	// Here the Plug-in will be de-instantiated, last possibility to remove some memory!
-	
-    vlc_object_t *p_aout = vlc_object_parent(p_filter);
-    filter_sys_t *p_sys = p_filter->p_sys;
-
-    /* Remove our callbacks */
-    var_DelCallback( p_aout, "compressor-rms-peak", RMSPeakCallback, p_sys );
-    var_DelCallback( p_aout, "compressor-attack", AttackCallback, p_sys );
-    var_DelCallback( p_aout, "compressor-release", ReleaseCallback, p_sys );
-    var_DelCallback( p_aout, "compressor-threshold", ThresholdCallback, p_sys );
-    var_DelCallback( p_aout, "compressor-ratio", RatioCallback, p_sys );
-    var_DelCallback( p_aout, "compressor-knee", KneeCallback, p_sys );
-    var_DelCallback( p_aout, "compressor-makeup-gain", MakeupGainCallback, p_sys );
-
-    /* Destroy the filter parameter structure */
-    free( p_sys );
 
 	//---do not forget to call parent ------
 	return AudioEffect::terminate ();
@@ -100,46 +91,22 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
                 /*/*/
                 if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) == kResultTrue) {
                     switch (paramQueue->getParameterId()) {
-                    case kParamBypass: bBypass = (value > 0.5f); break;
-                    case kParamZoom:   fZoom = value; break;
-                    case kParamLevel:  fLevel = value; break;
-                    case kParamOutput: fOutput = value; break;
-                        
-                    case kParamBand1_In: fParamBand1_Array[ParamArray_In] = value; break;
-                    case kParamBand2_In: fParamBand2_Array[ParamArray_In] = value; break;
-                    case kParamBand3_In: fParamBand3_Array[ParamArray_In] = value; break;
-                    case kParamBand4_In: fParamBand4_Array[ParamArray_In] = value; break;
-                    case kParamBand5_In: fParamBand5_Array[ParamArray_In] = value; break;
+                    case kParamInput:  pInput  = value; break;
+                    case kParamOutput: pOutput = value; break;
 
-                    case kParamBand1_Hz: fParamBand1_Array[ParamArray_Hz] = value; break;
-                    case kParamBand2_Hz: fParamBand2_Array[ParamArray_Hz] = value; break;
-                    case kParamBand3_Hz: fParamBand3_Array[ParamArray_Hz] = value; break;
-                    case kParamBand4_Hz: fParamBand4_Array[ParamArray_Hz] = value; break;
-                    case kParamBand5_Hz: fParamBand5_Array[ParamArray_Hz] = value; break;
+                    case kParamRMS_PEAK:  pRMS_PEAK = value; break;
+                    case kParamAttack:    pAttack = value; break;
+                    case kParamRelease:   pRelease = value; break;
+                    case kParamThreshold: pThreshold = value; break;
+                    case kParamRatio:     pRatio = value; break;
+                    case kParamKnee:      pKnee = value; break;
+                    case kParamMakeup:    pMakeup = value; break;
+                    case kParamMix:       pMix = value; break;
 
-                    case kParamBand1_Q: fParamBand1_Array[ParamArray_Q] = value; break;
-                    case kParamBand2_Q: fParamBand2_Array[ParamArray_Q] = value; break;
-                    case kParamBand3_Q: fParamBand3_Array[ParamArray_Q] = value; break;
-                    case kParamBand4_Q: fParamBand4_Array[ParamArray_Q] = value; break;
-                    case kParamBand5_Q: fParamBand5_Array[ParamArray_Q] = value; break;
+                    case kParamOS:        pOS = value; break;
+                    case kParamZoom:      pZoom = value; break;
 
-                    case kParamBand1_dB: fParamBand1_Array[ParamArray_dB] = value; break;
-                    case kParamBand2_dB: fParamBand2_Array[ParamArray_dB] = value; break;
-                    case kParamBand3_dB: fParamBand3_Array[ParamArray_dB] = value; break;
-                    case kParamBand4_dB: fParamBand4_Array[ParamArray_dB] = value; break;
-                    case kParamBand5_dB: fParamBand5_Array[ParamArray_dB] = value; break;
-
-                    case kParamBand1_Type: fParamBand1_Array[ParamArray_Type] = value; break;
-                    case kParamBand2_Type: fParamBand2_Array[ParamArray_Type] = value; break;
-                    case kParamBand3_Type: fParamBand3_Array[ParamArray_Type] = value; break;
-                    case kParamBand4_Type: fParamBand4_Array[ParamArray_Type] = value; break;
-                    case kParamBand5_Type: fParamBand5_Array[ParamArray_Type] = value; break;
-
-                    case kParamBand1_Order: fParamBand1_Array[ParamArray_Order] = value; break;
-                    case kParamBand2_Order: fParamBand2_Array[ParamArray_Order] = value; break;
-                    case kParamBand3_Order: fParamBand3_Array[ParamArray_Order] = value; break;
-                    case kParamBand4_Order: fParamBand4_Array[ParamArray_Order] = value; break;
-                    case kParamBand5_Order: fParamBand5_Array[ParamArray_Order] = value; break;
+                    case kParamBypass:    pBypass = (value > 0.5); break;
                     }
                 }
             }
@@ -152,16 +119,14 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
         return kResultOk;
     }
 
-    // (simplification) we suppose in this example that we have the same input channel count than
-    // the output
-    // int32 numChannels = data.inputs[0].numChannels;
-    numChannels = data.inputs[0].numChannels;
+    // (simplification) we suppose in this example that we have the same input channel count than the output
+    int32 numChannels = data.inputs[0].numChannels;
 
     //---get audio buffers----------------
     uint32 sampleFramesSize = getSampleFramesSizeInBytes(processSetup, data.numSamples);
     void** in  = getChannelBuffersPointer(processSetup, data.inputs[0]);
     void** out = getChannelBuffersPointer(processSetup, data.outputs[0]);
-    Vst::SampleRate getSampleRate = processSetup.sampleRate;
+    Vst::SampleRate SampleRate = processSetup.sampleRate;
 
     //---check if silence---------------
     // check if all channel are silent then process silent
@@ -185,74 +150,40 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
     else {
 
         data.outputs[0].silenceFlags = data.inputs[0].silenceFlags;
-
-        if (data.symbolicSampleSize == Vst::kSample32) {
-            processSVF<Vst::Sample32>((Vst::Sample32**)in, (Vst::Sample32**)out, numChannels, getSampleRate, data.numSamples);
+        //---in bypass mode outputs should be like inputs-----
+        if (pBypass)
+        {
+            for (int32 channel = 0; channel < numChannels; channel++)
+            {
+                memcpy (out[channel], in[channel], sampleFramesSize);
+            }
         }
-        else {
-            processSVF<Vst::Sample64>((Vst::Sample64**)in, (Vst::Sample64**)out, numChannels, getSampleRate, data.numSamples);
+        else
+        {
+            if (data.symbolicSampleSize == Vst::kSample32) {
+                processAudio<Vst::Sample32>((Vst::Sample32**)in, (Vst::Sample32**)out, numChannels, SampleRate, data.numSamples);
+            }
+            else {
+                processAudio<Vst::Sample64>((Vst::Sample64**)in, (Vst::Sample64**)out, numChannels, SampleRate, data.numSamples);
+            }
         }
-    }
-
-    int data_avail = FFT.getData(fft_out.data());
-
-    //--- send data ----------------
-    if (currentExchangeBlock.blockID == Vst::InvalidDataExchangeBlockID)
-        acquireNewExchangeBlock();
-    if (auto block = toDataBlock(currentExchangeBlock))
-    {
-        memcpy(block->Band1, fParamBand1_Array, ParamArray::ParamArray_size * sizeof(double));
-        memcpy(block->Band2, fParamBand2_Array, ParamArray::ParamArray_size * sizeof(double));
-        memcpy(block->Band3, fParamBand3_Array, ParamArray::ParamArray_size * sizeof(double));
-        memcpy(block->Band4, fParamBand4_Array, ParamArray::ParamArray_size * sizeof(double));
-        memcpy(block->Band5, fParamBand5_Array, ParamArray::ParamArray_size * sizeof(double));
-        memcpy(&block->samples[0], fft_out.data(), _numBins * sizeof(float));
-        block->FFTSampleRate = getSampleRate;
-        block->FFTDataAvail = data_avail;
-        block->numSamples = data.numSamples;
-        block->filterSampleRate = OS_target;
-        block->filterBypass = bBypass;
-        block->filterLevel = fLevel;
-        dataExchange->sendCurrentBlock();
-        acquireNewExchangeBlock();
     }
 
     return kResultOk;
-    
-	//--- First : Read inputs parameter changes-----------
+}
 
-    /*if (data.inputParameterChanges)
-    {
-        int32 numParamsChanged = data.inputParameterChanges->getParameterCount ();
-        for (int32 index = 0; index < numParamsChanged; index++)
-        {
-            if (auto* paramQueue = data.inputParameterChanges->getParameterData (index))
-            {
-                Vst::ParamValue value;
-                int32 sampleOffset;
-                int32 numPoints = paramQueue->getPointCount ();
-                switch (paramQueue->getParameterId ())
-                {
-				}
-			}
-		}
-	}*/
-	
-	//--- Here you have to implement your processing
-
-	return kResultOk;
+uint32 PLUGIN_API VLC_CompProcessor::getLatencySamples()
+{
+    return 0;
 }
 
 //------------------------------------------------------------------------
 tresult PLUGIN_API VLC_CompProcessor::setupProcessing (Vst::ProcessSetup& newSetup)
 {
-    /// VLC
-    f_sample_rate = newSetup.sampleRate;
-
     /* Calculate the RMS and lookahead sizes from the sample rate */
-    f_num = 0.01 * f_sample_rate;
-    rms.i_count = Round( Clamp( 0.5 * f_num, 1.0, RMS_BUF_SIZE ) );
-    la.i_count = Round( Clamp( f_num, 1.0, LOOKAHEAD_SIZE ) );
+    f_num = 0.01 * newSetup.sampleRate;
+    p_rms.i_count = Round( Clamp( 0.5 * f_num, 1.0, RMS_BUF_SIZE ) );
+    p_la.i_count = Round( Clamp( f_num, 1.0, LOOKAHEAD_SIZE ) );
     
 	//--- called before any processing ----
 	return AudioEffect::setupProcessing (newSetup);
@@ -277,16 +208,52 @@ tresult PLUGIN_API VLC_CompProcessor::setState (IBStream* state)
 {
 	// called when we load a preset, the model has to be reloaded
 	IBStreamer streamer (state, kLittleEndian);
+
+    int32           savedBypass     = 0;
+    Vst::ParamValue savedZoom       = 0.0;
+    Vst::ParamValue savedOS         = 0.0;
+    Vst::ParamValue savedInput      = 0.0;
+    Vst::ParamValue savedOutput     = 0.0;
+    Vst::ParamValue savedRMS_PEAK   = 0.0;
+    Vst::ParamValue savedAttack     = 0.0;
+    Vst::ParamValue savedRelease    = 0.0;
+    Vst::ParamValue savedThreshold  = 0.0;
+    Vst::ParamValue savedRatio      = 0.0;
+    Vst::ParamValue savedKnee       = 0.0;
+    Vst::ParamValue savedMakeup     = 0.0;
+    Vst::ParamValue savedMix        = 0.0;
+    Vst::ParamValue savedSoftBypass = 0.0;
     
-    /* Restore the last saved settings */
-    p_sys->f_rms_peak    = var_CreateGetFloat( p_aout, "compressor-rms-peak" );
-    p_sys->f_attack      = var_CreateGetFloat( p_aout, "compressor-attack" );
-    p_sys->f_release     = var_CreateGetFloat( p_aout, "compressor-release" );
-    p_sys->f_threshold   = var_CreateGetFloat( p_aout, "compressor-threshold" );
-    p_sys->f_ratio       = var_CreateGetFloat( p_aout, "compressor-ratio" );
-    p_sys->f_knee        = var_CreateGetFloat( p_aout, "compressor-knee" );
-    p_sys->f_makeup_gain = var_CreateGetFloat( p_aout, "compressor-makeup-gain" );
-	
+    if (streamer.readInt32 (savedBypass)     == false) return kResultFalse;
+    if (streamer.readDouble(savedZoom)       == false) return kResultFalse;
+    if (streamer.readDouble(savedOS)         == false) return kResultFalse;
+    if (streamer.readDouble(savedInput)      == false) return kResultFalse;
+    if (streamer.readDouble(savedOutput)     == false) return kResultFalse;
+    if (streamer.readDouble(savedRMS_PEAK)   == false) return kResultFalse;
+    if (streamer.readDouble(savedAttack)     == false) return kResultFalse;
+    if (streamer.readDouble(savedRelease)    == false) return kResultFalse;
+    if (streamer.readDouble(savedThreshold)  == false) return kResultFalse;
+    if (streamer.readDouble(savedRatio)      == false) return kResultFalse;
+    if (streamer.readDouble(savedKnee)       == false) return kResultFalse;
+    if (streamer.readDouble(savedMakeup)     == false) return kResultFalse;
+    if (streamer.readDouble(savedMix)        == false) return kResultFalse;
+    if (streamer.readDouble(savedSoftBypass) == false) return kResultFalse;
+    
+    pBypass     = savedBypass > 0;
+    pZoom  = savedZoom;
+    pOS    = static_cast<overSample>(Steinberg::FromNormalized<ParamValue> (savedOS, overSample_num));
+    pInput      = savedInput;
+    pOutput     = savedOutput;
+    pRMS_PEAK     = savedRMS_PEAK;
+    pAttack     = savedAttack;
+    pRelease     = savedRelease;
+    pThreshold     = savedThreshold;
+    pRatio     = savedRatio;
+    pKnee     = savedKnee;
+    pMakeup     = savedMakeup;
+    pMix     = savedMix;
+    pSoftBypass = savedSoftBypass;
+
 	return kResultOk;
 }
 
@@ -295,8 +262,179 @@ tresult PLUGIN_API VLC_CompProcessor::getState (IBStream* state)
 {
 	// here we need to save the model
 	IBStreamer streamer (state, kLittleEndian);
-
+    
+    streamer.writeInt32(pBypass ? 1 : 0);
+    streamer.writeDouble(pZoom);
+    streamer.writeDouble(Steinberg::ToNormalized<ParamValue> (static_cast<ParamValue>(pOS), overSample_num));
+    streamer.writeDouble(pInput);
+    streamer.writeDouble(pOutput);
+    streamer.writeDouble(pRMS_PEAK);
+    streamer.writeDouble(pAttack);
+    streamer.writeDouble(pRelease);
+    streamer.writeDouble(pThreshold);
+    streamer.writeDouble(pRatio);
+    streamer.writeDouble(pKnee);
+    streamer.writeDouble(pMakeup);
+    streamer.writeDouble(pMix);
+    streamer.writeDouble(pSoftBypass);
+    
 	return kResultOk;
+}
+
+
+template <typename SampleType>
+void VLC_CompProcessor::processAudio(
+    SampleType** inputs,
+    SampleType** outputs,
+    int32 numChannels,
+    Vst::SampleRate SampleRate,
+    int32 sampleFrames
+)
+{
+    // Make variable from Parameter
+    /*
+    Vst::Sample64 In_dB  = exp(log(10.0) * ((maxInput  - minInput)  * pInput  + minInput)  / 20.0);
+    Vst::Sample64 Out_dB = exp(log(10.0) * ((maxOutput - minOutput) * pOutput + minOutput) / 20.0);
+    Vst::Sample64 RMS_PEAK = (maxRMS_PEAK - minRMS_PEAK) * pRMS_PEAK + minRMS_PEAK;
+    Vst::Sample64 alphaAttack  = exp(-1.0 / (SampleRate * pAttack  * 0.001)); //aA = e^(-1/TA*fs)
+    Vst::Sample64 alphaRelease = exp(-1.0 / (SampleRate * pRelease * 0.001)); //aR = e^(-1/TR*fs)
+    Vst::Sample64 Threshold_dB = exp(log(10.0) * ((maxThreshold - minThreshold) * pThreshold + minThreshold) / 20.0);
+    Vst::Sample64 Ratio = (maxRatio - minRatio) * pRatio + minRatio;
+    Vst::Sample64 Slope = (Ratio - 1.0) / Ratio;
+    Vst::Sample64 Knee_dB = (maxKnee - minKnee) * pKnee + minKnee;
+    Vst::Sample64 Makeup_dB = exp(log(10.0) * ((maxMakeup - minMakeup) * pMakeup + minMakeup) / 20.0);
+    Vst::Sample64 Mix = (maxMix - minMix) * pMix + minMix;
+    
+    Vst::Sample64 f_knee_min = Threshold_dB - Knee_dB;
+    Vst::Sample64 f_knee_max = Threshold_dB + Knee_dB;
+    Vst::Sample64 f_ef_a     = alphaAttack * 0.25;
+     */
+    Vst::Sample64 In_dB  = exp(log(10.0) * ((maxInput  - minInput)  * pInput  + minInput)  / 20.0);
+    Vst::Sample64 Out_dB = exp(log(10.0) * ((maxOutput - minOutput) * pOutput + minOutput) / 20.0);
+    
+    int i_samples = sampleFrames;
+    int i_channels = numChannels;
+
+    Vst::Sample64 f_rms_peak    = pRMS_PEAK;     /* RMS/peak */
+    Vst::Sample64 f_attack      = (maxAttack - minAttack) * pAttack + minAttack;       /* Attack time (ms) */
+    Vst::Sample64 f_release     = (maxRelease - minRelease) * pRelease + minRelease;      /* Release time (ms) */
+    Vst::Sample64 f_threshold   = (maxThreshold - minThreshold) * pThreshold + minThreshold;    /* Threshold level (dB) */
+    Vst::Sample64 f_ratio       = (maxRatio - minRatio) * pRatio + minRatio;        /* Ratio (n:1) */
+    Vst::Sample64 f_knee        = (maxKnee - minKnee) * pKnee + minKnee;         /* Knee radius (dB) */
+    Vst::Sample64 f_makeup_gain = (maxMakeup - minMakeup) * pMakeup + minMakeup;  /* Makeup gain (dB) */
+
+    /* Prepare other compressor parameters */
+    Vst::Sample64 f_ga       = f_attack < 2.0 ? 0.0 : exp(-1.0 / (SampleRate * f_attack * 0.001));
+    Vst::Sample64 f_gr       = exp(-1.0 / (SampleRate * f_release * 0.001));
+    Vst::Sample64 f_rs       = ( f_ratio - 1.0 ) / f_ratio;
+    Vst::Sample64 f_mug      = Db2Lin( f_makeup_gain );
+    Vst::Sample64 f_knee_min = Db2Lin( f_threshold - f_knee );
+    Vst::Sample64 f_knee_max = Db2Lin( f_threshold + f_knee );
+    Vst::Sample64 f_ef_a     = f_ga * 0.25;
+    //Vst::Sample64 f_ef_ai    = 1.0 - f_ef_a;
+
+    /* Process the current buffer */
+    for( int i = 0; i < i_samples; i++ )
+    {
+        Vst::Sample64 f_lev_in_old;
+        Vst::Sample64 f_lev_in_new;
+
+        /* Now, compress the pre-equalized audio (ported from sc4_1882 plugin with a few modifications) */
+
+        /* Fetch the old delayed buffer value */
+        f_lev_in_old = p_la.p_buf[p_la.i_pos].f_lev_in;
+
+        /* Find the peak value of current sample.  
+         * This becomes the new delayed buffer value that replaces the old one in the lookahead array */
+        f_lev_in_new = std::abs( (Vst::Sample64) inputs[0][i] );
+        for( int i_chan = 0; i_chan < i_channels; i_chan++ )
+        {
+            f_lev_in_new = Max( f_lev_in_new, std::abs( (Vst::Sample64) inputs[i_chan][i] ) );
+        }
+        p_la.p_buf[p_la.i_pos].f_lev_in = f_lev_in_new;
+
+        /* Add the square of the peak value to a running sum */
+        f_sum += f_lev_in_new * f_lev_in_new;
+
+        /* Update the RMS envelope */
+        if( f_amp > f_env_rms )
+        {
+            f_env_rms = f_env_rms * f_ga + f_amp * ( 1.0 - f_ga );
+        }
+        else
+        {
+            f_env_rms = f_env_rms * f_gr + f_amp * ( 1.0 - f_gr );
+        }
+        RoundToZero( &f_env_rms );
+
+        /* Update the peak envelope */
+        if( f_lev_in_old > f_env_peak )
+        {
+            f_env_peak = f_env_peak * f_ga + f_lev_in_old * ( 1.0 - f_ga );
+        }
+        else
+        {
+            f_env_peak = f_env_peak * f_gr + f_lev_in_old * ( 1.0 - f_gr );
+        }
+        RoundToZero( &f_env_peak );
+
+        /* Process the RMS value and update the output gain every 4 samples */
+        if( ( i_count++ & 3 ) == 3 )
+        {
+            /* Process the RMS value by placing in the mean square value, and reset the running sum */
+            f_amp = RmsEnvProcess( &p_rms, f_sum * 0.25 );
+            f_sum = 0.0;
+            if( isnan( f_env_rms ) )
+            {
+                /* This can happen sometimes, but I don't know why. */
+                f_env_rms = 0.0;
+            }
+
+            /* Find the superposition of the RMS and peak envelopes */
+            f_env = LIN_INTERP( pRMS_PEAK, f_env_rms, f_env_peak );
+
+            /* Update the output gain */
+            if( f_env <= f_knee_min )
+            {
+                /* Gain below the knee (and below the threshold) */
+                f_gain_out = 1.0;
+            }
+            else if( f_env < f_knee_max )
+            {
+                /* Gain within the knee */
+                const Vst::Sample64 f_x = -( f_threshold - f_knee - Lin2Db( f_env ) ) / f_knee;
+                f_gain_out = Db2Lin( -f_knee * f_rs * f_x * f_x * 0.25 );
+            }
+            else
+            {
+                /* Gain above the knee (and above the threshold) */
+                f_gain_out = Db2Lin( ( f_threshold - Lin2Db( f_env ) ) * f_rs );
+            }
+        }
+
+        /* Find the total gain */
+        f_gain = f_gain * f_ef_a + f_gain_out * (1.0 - f_ef_a); //inertia to the gain change, with quater of attack
+
+        /* Write the resulting buffer to the output */
+        //BufferProcess( inputs, outputs, i_channels, f_gain, f_mug, p_la );
+        for( int i_chan = 0; i_chan < i_channels; i_chan++ )
+        {
+            /* Current buffer value */
+            Vst::ParamValue f_x = inputs[i_chan][i];
+
+            /* Output the compressed delayed buffer value */
+            outputs[i_chan][i] = p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * f_gain * f_mug;
+            // outputs[i_chan][i] = outputs[i_chan][i] * pMix + p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * (1.0 - pMix);
+
+            /* Update the delayed buffer value */
+            p_la.p_buf[p_la.i_pos].pf_vals[i_chan] = f_x;
+        }
+
+        /* Go to the next delayed buffer value for the next run */
+        p_la.i_pos = ( p_la.i_pos + 1 ) % ( p_la.i_count );
+    }
+    
+    return;
 }
 
 /*****************************************************************************
@@ -304,7 +442,7 @@ tresult PLUGIN_API VLC_CompProcessor::getState (IBStream* state)
  *****************************************************************************/
 
 /* Zero out denormals by adding and subtracting a small number, from Laurent de Soras */
-static void VLC_CompProcessor::RoundToZero( Vst::ParamValue *pf_x )
+void VLC_CompProcessor::RoundToZero( Vst::ParamValue *pf_x )
 {
     static const Vst::ParamValue f_anti_denormal = 1e-18;
 
@@ -314,7 +452,7 @@ static void VLC_CompProcessor::RoundToZero( Vst::ParamValue *pf_x )
 
 /* A set of branchless clipping operations from Laurent de Soras */
 
-static Vst::ParamValue VLC_CompProcessor::Max( Vst::ParamValue f_x, Vst::ParamValue f_a )
+Vst::ParamValue VLC_CompProcessor::Max( Vst::ParamValue f_x, Vst::ParamValue f_a )
 {
     f_x -= f_a;
     f_x += std::abs( f_x );
@@ -324,7 +462,7 @@ static Vst::ParamValue VLC_CompProcessor::Max( Vst::ParamValue f_x, Vst::ParamVa
     return f_x;
 }
 
-static Vst::ParamValue VLC_CompProcessor::Clamp( Vst::ParamValue f_x, Vst::ParamValue f_a, Vst::ParamValue f_b )
+Vst::ParamValue VLC_CompProcessor::Clamp( Vst::ParamValue f_x, Vst::ParamValue f_a, Vst::ParamValue f_b )
 {
     const Vst::ParamValue f_x1 = std::abs( f_x - f_a );
     const Vst::ParamValue f_x2 = std::abs( f_x - f_b );
@@ -337,7 +475,7 @@ static Vst::ParamValue VLC_CompProcessor::Clamp( Vst::ParamValue f_x, Vst::Param
 }
 
 /* Round float to int using IEEE int* hack */
-static int VLC_CompProcessor::Round( float f_x )
+int VLC_CompProcessor::Round( float f_x )
 {
     ls_pcast32 p;
 
@@ -348,7 +486,7 @@ static int VLC_CompProcessor::Round( float f_x )
 }
 
 /* Calculate current level from root-mean-squared of circular buffer ("RMS") */
-static Vst::ParamValue VLC_CompProcessor::RmsEnvProcess( rms_env * p_r, const Vst::ParamValue f_x )
+Vst::ParamValue VLC_CompProcessor::RmsEnvProcess( rms_env * p_r, const Vst::ParamValue f_x )
 {
     /* Remove the old term from the sum */
     p_r->f_sum -= p_r->pf_buf[p_r->i_pos];
@@ -372,20 +510,24 @@ static Vst::ParamValue VLC_CompProcessor::RmsEnvProcess( rms_env * p_r, const Vs
     return sqrt( p_r->f_sum / p_r->i_count );
 }
 
-/* Output the compressed delayed buffer and store the current buffer.  Uses a
- * circular array, just like the one used in calculating the RMS of the buffer
+/* Output the compressed delayed buffer and store the current buffer.  
+ * Uses a circular array, just like the one used in calculating the RMS of the buffer
  */
-static void VLC_CompProcessor::BufferProcess( Vst::ParamValue * pf_buf, int i_channels, Vst::ParamValue f_gain,
-                                             Vst::ParamValue f_mug, lookahead * p_la )
+void VLC_CompProcessor::BufferProcess(Vst::ParamValue * pf_buf_in,
+                                             Vst::ParamValue * pf_buf_out,
+                                             int i_channels,
+                                             Vst::ParamValue f_gain,
+                                             Vst::ParamValue f_mug,
+                                             lookahead * p_la )
 {
     /* Loop through every channel */
     for( int i_chan = 0; i_chan < i_channels; i_chan++ )
     {
-        Vst::ParamValue f_x = pf_buf[i_chan]; /* Current buffer value */
+        /* Current buffer value */
+        Vst::ParamValue f_x = pf_buf_in[i_chan];
 
         /* Output the compressed delayed buffer value */
-        pf_buf[i_chan] = p_la->p_buf[p_la->i_pos].pf_vals[i_chan]
-                       * f_gain * f_mug;
+        pf_buf_out[i_chan] = p_la->p_buf[p_la->i_pos].pf_vals[i_chan] * f_gain * f_mug;
 
         /* Update the delayed buffer value */
         p_la->p_buf[p_la->i_pos].pf_vals[i_chan] = f_x;
@@ -394,109 +536,6 @@ static void VLC_CompProcessor::BufferProcess( Vst::ParamValue * pf_buf, int i_ch
     /* Go to the next delayed buffer value for the next run */
     p_la->i_pos = ( p_la->i_pos + 1 ) % ( p_la->i_count );
 }
-
-/*****************************************************************************
- * Callback functions
- *****************************************************************************/
-static int VLC_CompProcessor::RMSPeakCallback( vlc_object_t *p_this, char const *psz_cmd,
-                            vlc_value_t oldval, vlc_value_t newval,
-                            void * p_data )
-{
-    VLC_UNUSED(p_this); VLC_UNUSED(psz_cmd); VLC_UNUSED(oldval);
-    filter_sys_t *p_sys = p_data;
-
-    vlc_mutex_lock( &p_sys->lock );
-    p_sys->f_rms_peak = Clamp( newval.f_float, 0.0f, 1.0f );
-    vlc_mutex_unlock( &p_sys->lock );
-
-    return VLC_SUCCESS;
-}
-
-static int VLC_CompProcessor::AttackCallback( vlc_object_t *p_this, char const *psz_cmd,
-                           vlc_value_t oldval, vlc_value_t newval,
-                           void * p_data )
-{
-    VLC_UNUSED(p_this); VLC_UNUSED(psz_cmd); VLC_UNUSED(oldval);
-    filter_sys_t *p_sys = p_data;
-
-    vlc_mutex_lock( &p_sys->lock );
-    p_sys->f_attack = Clamp( newval.f_float, 1.5f, 400.0f );
-    vlc_mutex_unlock( &p_sys->lock );
-
-    return VLC_SUCCESS;
-}
-
-static int VLC_CompProcessor::ReleaseCallback( vlc_object_t *p_this, char const *psz_cmd,
-                            vlc_value_t oldval, vlc_value_t newval,
-                            void * p_data )
-{
-    VLC_UNUSED(p_this); VLC_UNUSED(psz_cmd); VLC_UNUSED(oldval);
-    filter_sys_t *p_sys = p_data;
-
-    vlc_mutex_lock( &p_sys->lock );
-    p_sys->f_release = Clamp( newval.f_float, 2.0f, 800.0f );
-    vlc_mutex_unlock( &p_sys->lock );
-
-    return VLC_SUCCESS;
-}
-
-static int VLC_CompProcessor::ThresholdCallback( vlc_object_t *p_this, char const *psz_cmd,
-                              vlc_value_t oldval, vlc_value_t newval,
-                              void * p_data )
-{
-    VLC_UNUSED(p_this); VLC_UNUSED(psz_cmd); VLC_UNUSED(oldval);
-    filter_sys_t *p_sys = p_data;
-
-    vlc_mutex_lock( &p_sys->lock );
-    p_sys->f_threshold = Clamp( newval.f_float, -30.0f, 0.0f );
-    vlc_mutex_unlock( &p_sys->lock );
-
-    return VLC_SUCCESS;
-}
-
-static int VLC_CompProcessor::RatioCallback( vlc_object_t *p_this, char const *psz_cmd,
-                          vlc_value_t oldval, vlc_value_t newval,
-                          void * p_data )
-{
-    VLC_UNUSED(p_this); VLC_UNUSED(psz_cmd); VLC_UNUSED(oldval);
-    filter_sys_t *p_sys = p_data;
-
-    vlc_mutex_lock( &p_sys->lock );
-    p_sys->f_ratio = Clamp( newval.f_float, 1.0f, 20.0f );
-    vlc_mutex_unlock( &p_sys->lock );
-
-    return VLC_SUCCESS;
-}
-
-static int VLC_CompProcessor::KneeCallback( vlc_object_t *p_this, char const *psz_cmd,
-                         vlc_value_t oldval, vlc_value_t newval,
-                         void * p_data )
-{
-    VLC_UNUSED(p_this); VLC_UNUSED(psz_cmd); VLC_UNUSED(oldval);
-    filter_sys_t *p_sys = p_data;
-
-    vlc_mutex_lock( &p_sys->lock );
-    p_sys->f_knee = Clamp( newval.f_float, 1.0f, 10.0f );
-    vlc_mutex_unlock( &p_sys->lock );
-
-    return VLC_SUCCESS;
-}
-
-static int VLC_CompProcessor::MakeupGainCallback( vlc_object_t *p_this, char const *psz_cmd,
-                               vlc_value_t oldval, vlc_value_t newval,
-                               void * p_data )
-{
-    VLC_UNUSED(p_this); VLC_UNUSED(psz_cmd); VLC_UNUSED(oldval);
-    filter_sys_t *p_sys = p_data;
-
-    vlc_mutex_lock( &p_sys->lock );
-    p_sys->f_makeup_gain = Clamp( newval.f_float, 0.0f, 24.0f );
-    vlc_mutex_unlock( &p_sys->lock );
-
-    return VLC_SUCCESS;
-}
-
-
 
 //------------------------------------------------------------------------
 } // namespace yg331

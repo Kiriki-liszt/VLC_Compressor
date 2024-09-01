@@ -4,9 +4,39 @@
 
 #pragma once
 
+#include "VLCComp_shared.h"
 #include "public.sdk/source/vst/vstaudioeffect.h"
 
 namespace yg331 {
+class Decibels
+{
+public:
+    template <typename Type>
+    static Type decibelsToGain(
+        Type decibels,
+        Type minusInfinityDb = Type(defaultMinusInfinitydB)
+    )
+    {
+        return decibels > minusInfinityDb
+                        ? std::pow(Type(10.0), decibels * Type(0.05))
+                        : Type();
+    }
+
+    template <typename Type>
+    static Type gainToDecibels(
+        Type gain,
+        Type minusInfinityDb = Type(defaultMinusInfinitydB)
+    )
+    {
+        return gain > Type()
+                    ? (std::max)(minusInfinityDb, static_cast<Type> (std::log10(gain)) * Type(20.0))
+                    : minusInfinityDb;
+    }
+
+private:
+    enum { defaultMinusInfinitydB = -100 };
+    Decibels() = delete;
+};
 //------------------------------------------------------------------------
 //  VLC_CompProcessor
 //------------------------------------------------------------------------
@@ -36,6 +66,9 @@ public:
 
 	/** Will be called before any process call */
 	Steinberg::tresult PLUGIN_API setupProcessing (Steinberg::Vst::ProcessSetup& newSetup) SMTG_OVERRIDE;
+    
+    /** Gets the current Latency in samples. */
+    Steinberg::uint32  PLUGIN_API getLatencySamples() SMTG_OVERRIDE;
 	
 	/** Asks if a given sample size is supported see SymbolicSampleSizes. */
 	Steinberg::tresult PLUGIN_API canProcessSampleSize (Steinberg::int32 symbolicSampleSize) SMTG_OVERRIDE;
@@ -49,74 +82,47 @@ public:
 
 //------------------------------------------------------------------------
 protected:
-    #define RMS_BUF_SIZE    (960)
-    #define LOOKAHEAD_SIZE  ((RMS_BUF_SIZE)<<1)
-
-    #define LIN_INTERP(f,a,b) ((a) + (f) * ( (b) - (a) ))
-    #define LIMIT(v,l,u)      (v < l ? l : ( v > u ? u : v ))
-
-    typedef struct
-    {
-        ParamValue        pf_buf[RMS_BUF_SIZE];
-        unsigned int i_pos;
-        unsigned int i_count;
-        ParamValue        f_sum;
-
-    } rms_env;
-
-    typedef struct
-    {
-        struct
-        {
-            ParamValue pf_vals[AOUT_CHAN_MAX];
-            ParamValue f_lev_in;
-
-        } p_buf[LOOKAHEAD_SIZE];
-        unsigned int i_pos;
-        unsigned int i_count;
-
-    } lookahead;
-    
     using SampleRate = Steinberg::Vst::SampleRate;
     using ParamValue = Steinberg::Vst::ParamValue;
     using Sample64   = Steinberg::Vst::Sample64;
     using int32      = Steinberg::int32;
+    using uint32     = Steinberg::uint32;
     
     template <typename SampleType>
     void processAudio(SampleType** inputs, SampleType** outputs, int32 numChannels, SampleRate getSampleRate, int32 sampleFrames);
     
     // Parameters
     bool       pBypass  = false;
-    ParamValue pInput = 0.0;
-    ParamValue pOutput = 0.0;
+    ParamValue pInput   = 0.5;
+    ParamValue pOutput  = 0.5;
     
-    ParamValue pRMS_PEAK = 0.0;
-    ParamValue pAttack = 0.0;
-    ParamValue pRelease = 1.0;
-    ParamValue pThreshold = 1.0;
-    ParamValue pRatio = 0.0;
-    ParamValue pKnee = 0.0;
+    ParamValue pRMS_PEAK = 0.2;
+    ParamValue pAttack = 0.2;
+    ParamValue pRelease = 0.5;
+    ParamValue pThreshold = 0.5;
+    ParamValue pRatio = 0.2;
+    ParamValue pKnee = 0.2;
     ParamValue pMakeup = 0.0;
     ParamValue pMix = 1.0;
+    ParamValue pSoftBypass = 0.0;
     
-    ParamValue pZoom    = 2.0 / 6.0;
-    overSample pParamOS = overSample_2x;
+    ParamValue pZoom  = 2.0 / 6.0;
+    ParamValue pOS = 0.0;
     
     // Internal Variables
-    ParamValue f_sample_rate = 48000.0;
-    ParamValue f_num = 0.0;
+    Sample64 f_num = 0.0;
     
-    ParamValue f_amp;
-    unsigned int i_count;
-    ParamValue f_env;
-    ParamValue f_env_peak;
-    ParamValue f_env_rms;
-    ParamValue f_gain;
-    ParamValue f_gain_out;
-    rms_env rms;
-    ParamValue f_sum;
-    lookahead la;
+    Sample64 f_sum = 0.0;
+    Sample64 f_amp = 0.0;
+    Sample64 f_gain = 0.0;
+    Sample64 f_gain_out = 0.0;
+    Sample64 f_env = 0.0;
+    Sample64 f_env_rms = 0.0;
+    Sample64 f_env_peak = 0.0;
+    uint32   i_count = 0;
 
+    rms_env   p_rms;
+    lookahead p_la;
     
     typedef union
     {
@@ -124,21 +130,23 @@ protected:
         int32_t i;
 
     } ls_pcast32;
+    
+    static double Db2Lin(double f_db)
+    {
+        return std::pow(10.0, f_db / 20.0);
+    }
 
-    static void     RoundToZero     ( ParamValue * );
-    static ParamValue    Max             ( ParamValue, ParamValue );
-    static ParamValue    Clamp           ( ParamValue, ParamValue, ParamValue );
-    static int      Round           ( float );
-    static ParamValue    RmsEnvProcess   ( rms_env *, const ParamValue );
-    static void     BufferProcess   ( ParamValue *, int, ParamValue, ParamValue, lookahead * );
+    static double Lin2Db(double f_lin)
+    {
+        return 20.0 * log10(f_lin);
+    }
 
-    static int RMSPeakCallback      ( vlc_object_t *, char const *, vlc_value_t, vlc_value_t, void * );
-    static int AttackCallback       ( vlc_object_t *, char const *, vlc_value_t, vlc_value_t, void * );
-    static int ReleaseCallback      ( vlc_object_t *, char const *, vlc_value_t, vlc_value_t, void * );
-    static int ThresholdCallback    ( vlc_object_t *, char const *, vlc_value_t, vlc_value_t, void * );
-    static int RatioCallback        ( vlc_object_t *, char const *, vlc_value_t, vlc_value_t, void * );
-    static int KneeCallback         ( vlc_object_t *, char const *, vlc_value_t, vlc_value_t, void * );
-    static int MakeupGainCallback   ( vlc_object_t *, char const *, vlc_value_t, vlc_value_t, void * );
+    static void       RoundToZero     ( ParamValue * );
+    static ParamValue Max             ( ParamValue, ParamValue );
+    static ParamValue Clamp           ( ParamValue, ParamValue, ParamValue );
+    static int        Round           ( float );
+    static ParamValue RmsEnvProcess   ( rms_env *, const ParamValue );
+    static void       BufferProcess   ( ParamValue *, ParamValue *, int, ParamValue, ParamValue, lookahead * );
 };
 
 //------------------------------------------------------------------------

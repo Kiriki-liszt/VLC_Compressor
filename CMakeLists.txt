@@ -22,6 +22,7 @@ smtg_enable_vst3_sdk()
 smtg_add_vst3plugin(VLC_Compressor
     source/version.h
     source/VLCComp_cids.h
+    source/VLCComp_shared.h
     source/VLCComp_processor.h
     source/VLCComp_processor.cpp
     source/VLCComp_controller.h
