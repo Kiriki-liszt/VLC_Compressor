@@ -138,13 +138,13 @@ template<> void VLC_CompController::UIVuMeterController::updateVuMeterValue()
 {
     if (mainController) {
         if (inMeter)          inMeter->      setValue(mainController->getVuMeterByTag(kIn));
-        if (outMeter)         outMeter->     setValueNormalized(mainController->getVuMeterByTag(kOut));
-        if (grMeter)          grMeter->      setValueNormalized(mainController->getVuMeterByTag(kGR));
+        if (outMeter)         outMeter->     setValue(mainController->getVuMeterByTag(kOut));
+        if (grMeter)          grMeter->      setValue(mainController->getVuMeterByTag(kGR));
         if (vuMeterInL)       vuMeterInL->   setValue(mainController->getVuMeterByTag(kInL));
         if (vuMeterInR)       vuMeterInR->   setValue(mainController->getVuMeterByTag(kInR));
-        if (vuMeterOutL)      vuMeterOutL->  setValueNormalized(mainController->getVuMeterByTag(kOutL));
-        if (vuMeterOutR)      vuMeterOutR->  setValueNormalized(mainController->getVuMeterByTag(kOutR));
-        if (vuMeterGR)        vuMeterGR->    setValueNormalized(mainController->getVuMeterByTag(kGR));
+        if (vuMeterOutL)      vuMeterOutL->  setValue(mainController->getVuMeterByTag(kOutL));
+        if (vuMeterOutR)      vuMeterOutR->  setValue(mainController->getVuMeterByTag(kOutR));
+        if (vuMeterGR)        vuMeterGR->    setValue(mainController->getVuMeterByTag(kGR));
     }
 }
 
@@ -626,6 +626,7 @@ tresult PLUGIN_API VLC_CompController::notify(Vst::IMessage* message)
                 }
             }
         }
+        //FDebugPrint("vuInL = %f\n",vuInL);
         return kResultOk;
     }
 

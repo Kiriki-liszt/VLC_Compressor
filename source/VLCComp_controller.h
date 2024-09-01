@@ -123,12 +123,11 @@ public:
         }
         return false;
     };
-    /*
+    
     void onIdle() override {
-        if (getOldValue() != value)
             invalid();
     };
-    */
+    
 
     CLASS_METHODS(MyVuMeter, CControl)
 
