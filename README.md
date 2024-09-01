@@ -5,5 +5,5 @@ https://code.videolan.org/videolan/vlc/-/blob/master/modules/audio_filter/compre
 
 ## TODO  
 
-- [] Implement: Mix, Input, Output
-- [] Knob: Attack, Release to Log
+- [] Implement: Mix, Input, Output  
+- [] Knob: Attack, Release to Log  
