@@ -174,7 +174,7 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
 
 uint32 PLUGIN_API VLC_CompProcessor::getLatencySamples()
 {
-    return Round( Clamp( SR * 0.01, 1.0, LOOKAHEAD_SIZE ) );
+    return Round( Clamp( SR * 0.01, 1.0, LOOKAHEAD_SIZE ) ); //10.0ms
 }
 
 //------------------------------------------------------------------------
@@ -293,36 +293,19 @@ void VLC_CompProcessor::processAudio(
 )
 {
     // Make variable from Parameter
-    /*
-    Vst::Sample64 In_dB  = exp(log(10.0) * ((maxInput  - minInput)  * pInput  + minInput)  / 20.0);
-    Vst::Sample64 Out_dB = exp(log(10.0) * ((maxOutput - minOutput) * pOutput + minOutput) / 20.0);
-    Vst::Sample64 RMS_PEAK = (maxRMS_PEAK - minRMS_PEAK) * pRMS_PEAK + minRMS_PEAK;
-    Vst::Sample64 alphaAttack  = exp(-1.0 / (SampleRate * pAttack  * 0.001)); //aA = e^(-1/TA*fs)
-    Vst::Sample64 alphaRelease = exp(-1.0 / (SampleRate * pRelease * 0.001)); //aR = e^(-1/TR*fs)
-    Vst::Sample64 Threshold_dB = exp(log(10.0) * ((maxThreshold - minThreshold) * pThreshold + minThreshold) / 20.0);
-    Vst::Sample64 Ratio = (maxRatio - minRatio) * pRatio + minRatio;
-    Vst::Sample64 Slope = (Ratio - 1.0) / Ratio;
-    Vst::Sample64 Knee_dB = (maxKnee - minKnee) * pKnee + minKnee;
-    Vst::Sample64 Makeup_dB = exp(log(10.0) * ((maxMakeup - minMakeup) * pMakeup + minMakeup) / 20.0);
-    Vst::Sample64 Mix = (maxMix - minMix) * pMix + minMix;
-    
-    Vst::Sample64 f_knee_min = Threshold_dB - Knee_dB;
-    Vst::Sample64 f_knee_max = Threshold_dB + Knee_dB;
-    Vst::Sample64 f_ef_a     = alphaAttack * 0.25;
-     */
-    Vst::Sample64 In_dB  = exp(log(10.0) * ((maxInput  - minInput)  * pInput  + minInput)  / 20.0);
-    Vst::Sample64 Out_dB = exp(log(10.0) * ((maxOutput - minOutput) * pOutput + minOutput) / 20.0);
+    Vst::Sample64 inputGain  = Db2Lin(Norm2Plain(pInput,  minInput,  maxInput));
+    Vst::Sample64 outputGain = Db2Lin(Norm2Plain(pOutput, minOutput, maxOutput));
     
     int i_samples = sampleFrames;
     int i_channels = numChannels;
 
     Vst::Sample64 f_rms_peak    = pRMS_PEAK;     /* RMS/peak */
-    Vst::Sample64 f_attack      = (maxAttack - minAttack) * pAttack + minAttack;       /* Attack time (ms) */
-    Vst::Sample64 f_release     = (maxRelease - minRelease) * pRelease + minRelease;      /* Release time (ms) */
-    Vst::Sample64 f_threshold   = (maxThreshold - minThreshold) * pThreshold + minThreshold;    /* Threshold level (dB) */
-    Vst::Sample64 f_ratio       = (maxRatio - minRatio) * pRatio + minRatio;        /* Ratio (n:1) */
-    Vst::Sample64 f_knee        = (maxKnee - minKnee) * pKnee + minKnee;         /* Knee radius (dB) */
-    Vst::Sample64 f_makeup_gain = (maxMakeup - minMakeup) * pMakeup + minMakeup;  /* Makeup gain (dB) */
+    Vst::Sample64 f_attack      = Norm2Plain(pAttack,    minAttack,    maxAttack);    /* Attack time (ms)     */
+    Vst::Sample64 f_release     = Norm2Plain(pRelease,   minRelease,   maxRelease);   /* Release time (ms)    */
+    Vst::Sample64 f_threshold   = Norm2Plain(pThreshold, minThreshold, maxThreshold); /* Threshold level (dB) */
+    Vst::Sample64 f_ratio       = Norm2Plain(pRatio,     minRatio,     maxRatio);     /* Ratio (n:1)          */
+    Vst::Sample64 f_knee        = Norm2Plain(pKnee,      minKnee,      maxKnee);      /* Knee radius (dB)     */
+    Vst::Sample64 f_makeup_gain = Norm2Plain(pMakeup,    minMakeup,    maxMakeup);    /* Makeup gain (dB)     */
 
     /* Prepare other compressor parameters */
     Vst::Sample64 f_ga       = f_attack < 2.0 ? 0.0 : exp(-1.0 / (SampleRate * f_attack * 0.001));
@@ -347,10 +330,10 @@ void VLC_CompProcessor::processAudio(
 
         /* Find the peak value of current sample.  
          * This becomes the new delayed buffer value that replaces the old one in the lookahead array */
-        f_lev_in_new = std::abs( (Vst::Sample64) inputs[0][i] );
+        f_lev_in_new = std::abs( (Vst::Sample64) inputs[0][i] * inputGain);
         for( int i_chan = 0; i_chan < i_channels; i_chan++ )
         {
-            f_lev_in_new = Max( f_lev_in_new, std::abs( (Vst::Sample64) inputs[i_chan][i] ) );
+            f_lev_in_new = Max( f_lev_in_new, std::abs( (Vst::Sample64) inputs[i_chan][i] * inputGain) );
         }
         p_la.p_buf[p_la.i_pos].f_lev_in = f_lev_in_new;
 
@@ -421,11 +404,12 @@ void VLC_CompProcessor::processAudio(
         for( int i_chan = 0; i_chan < i_channels; i_chan++ )
         {
             /* Current buffer value */
-            Vst::ParamValue f_x = inputs[i_chan][i];
+            Vst::ParamValue f_x = inputs[i_chan][i] * inputGain;
 
             /* Output the compressed delayed buffer value */
             outputs[i_chan][i] = p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * f_gain * f_mug;
             outputs[i_chan][i] = outputs[i_chan][i] * pMix + p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * (1.0 - pMix);
+            outputs[i_chan][i] *= outputGain;
 
             /* Update the delayed buffer value */
             p_la.p_buf[p_la.i_pos].pf_vals[i_chan] = f_x;

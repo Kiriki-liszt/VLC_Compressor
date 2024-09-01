@@ -62,19 +62,21 @@ protected:
     template <typename SampleType>
     void processAudio(SampleType** inputs, SampleType** outputs, int32 numChannels, SampleRate getSampleRate, int32 sampleFrames);
     
+#define Plain2Norm(v, min, max) ((v - min) / (max - min))
+#define Norm2Plain(v, min, max) (v * (max - min) + min)
     // Parameters
-    bool       pBypass  = false;
-    ParamValue pInput   = 0.5;
-    ParamValue pOutput  = 0.5;
+    bool       pBypass    = false;
+    ParamValue pInput     = Plain2Norm(dftInput,  minInput,  maxInput);
+    ParamValue pOutput    = Plain2Norm(dftOutput, minOutput, maxOutput);
     
-    ParamValue pRMS_PEAK = 0.2;
-    ParamValue pAttack = 0.2;
-    ParamValue pRelease = 0.5;
-    ParamValue pThreshold = 0.5;
-    ParamValue pRatio = 0.2;
-    ParamValue pKnee = 0.2;
-    ParamValue pMakeup = 0.0;
-    ParamValue pMix = 1.0;
+    ParamValue pRMS_PEAK  = Plain2Norm(dftRMS_PEAK,  minRMS_PEAK,  maxRMS_PEAK);
+    ParamValue pAttack    = Plain2Norm(dftAttack,    minAttack,    maxAttack);
+    ParamValue pRelease   = Plain2Norm(dftRelease,   minRelease,   maxRelease);
+    ParamValue pThreshold = Plain2Norm(dftThreshold, minThreshold, maxThreshold);
+    ParamValue pRatio     = Plain2Norm(dftRatio,     minRatio,     maxRatio);
+    ParamValue pKnee      = Plain2Norm(dftKnee,      minKnee,      maxKnee);
+    ParamValue pMakeup    = Plain2Norm(dftMakeup,    minMakeup,    maxMakeup);
+    ParamValue pMix       = Plain2Norm(dftMix,       minMix,       maxMix);
     ParamValue pSoftBypass = 0.0;
     
     ParamValue pZoom  = 2.0 / 6.0;
