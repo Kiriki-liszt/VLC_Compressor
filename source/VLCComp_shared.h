@@ -89,5 +89,15 @@ static constexpr ParamValue minMix = 0.0;
 static constexpr ParamValue maxMix = 100.0;
 static constexpr ParamValue dftMix = 100.0;
 
+enum
+{
+    kIn = 100,
+    kInL = 101,
+    kInR = 102,
+    kOut = 103,
+    kOutL = 104,
+    kOutR = 105,
+    kGR = 106,
+};
 //------------------------------------------------------------------------
 } // namespace yg331

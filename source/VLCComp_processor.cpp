@@ -44,7 +44,7 @@ tresult PLUGIN_API VLC_CompProcessor::initialize (FUnknown* context)
 	}
 
 	//--- create Audio IO ------
-	addAudioInput (STR16 ("Stereo In"), Steinberg::Vst::SpeakerArr::kStereo);
+	addAudioInput  (STR16 ("Stereo In"),  Steinberg::Vst::SpeakerArr::kStereo);
 	addAudioOutput (STR16 ("Stereo Out"), Steinberg::Vst::SpeakerArr::kStereo);
 
 	/* If you don't need an event bus, you can remove the next line */
@@ -57,7 +57,16 @@ tresult PLUGIN_API VLC_CompProcessor::initialize (FUnknown* context)
 tresult PLUGIN_API VLC_CompProcessor::terminate ()
 {
 	// Here the Plug-in will be de-instantiated, last possibility to remove some memory!
+#define clear_delete(vec) {vec.clear(); vec.shrink_to_fit();}
 
+    clear_delete(fInputVu);
+    clear_delete(fOutputVu);
+
+    for (auto& loop : buff)
+        clear_delete(loop);
+    clear_delete(buff);
+    clear_delete(buff_head);
+    
 	//---do not forget to call parent ------
 	return AudioEffect::terminate ();
 }
@@ -127,6 +136,11 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
     void** in  = getChannelBuffersPointer(processSetup, data.inputs[0]);
     void** out = getChannelBuffersPointer(processSetup, data.outputs[0]);
     Vst::SampleRate SampleRate = processSetup.sampleRate;
+    
+    // init VuMeters
+    for (auto& loop : fInputVu) loop = init_meter;
+    for (auto& loop : fOutputVu) loop = init_meter;
+    fMeterVu = init_meter;
 
     //---check if silence---------------
     // check if all channel are silent then process silent
@@ -167,6 +181,52 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
                 processAudio<Vst::Sample64>((Vst::Sample64**)in, (Vst::Sample64**)out, numChannels, SampleRate, data.numSamples);
             }
         }
+
+        for (auto& loop : fInputVu) loop = Lin2Db(loop);
+        for (auto& loop : fOutputVu) loop = Lin2Db(loop);
+    }
+    
+    //---send a message
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = (numChannels > 0) ? fInputVu[0] : 0.0;
+        message->getAttributes()->setFloat ("vuInL", data);
+        sendMessage (message);
+    }
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = (numChannels > 1) ? fInputVu[1] : ((numChannels > 0) ? fInputVu[0] : 0.0);
+        message->getAttributes ()->setFloat ("vuInR", data);
+        sendMessage (message);
+    }
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = (numChannels > 0) ? fOutputVu[0] : 0.0;
+        message->getAttributes ()->setFloat ("vuOutL", data);
+        sendMessage (message);
+    }
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = (numChannels > 1) ? fOutputVu[1] : ((numChannels > 0) ? fOutputVu[0] : 0.0);
+        message->getAttributes ()->setFloat ("vuOutR", data);
+        sendMessage (message);
+    }
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = fMeterVu;
+        message->getAttributes ()->setFloat ("vuEffect", data);
+        sendMessage (message);
+    }
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        message->getAttributes ()->setInt ("update", true);
+        sendMessage (message);
     }
 
     return kResultOk;
@@ -186,6 +246,30 @@ tresult PLUGIN_API VLC_CompProcessor::setupProcessing (Vst::ProcessSetup& newSet
     p_rms.i_count = Round( Clamp( 0.5 * f_num, 1.0, RMS_BUF_SIZE ) );
     p_la.i_count = Round( Clamp( f_num, 1.0, LOOKAHEAD_SIZE ) );
     
+    Vst::SpeakerArrangement arr;
+    getBusArrangement(Vst::BusDirections::kInput, 0, arr);
+    uint16_t numChannels = static_cast<uint16_t> (Vst::SpeakerArr::getChannelCount(arr));
+
+    VuInput.setChannel(numChannels);
+    VuInput.setType(LevelEnvelopeFollower::Peak);
+    VuInput.setDecay(3.0);
+    VuInput.prepare(newSetup.sampleRate);
+
+    VuOutput.setChannel(numChannels);
+    VuOutput.setType(LevelEnvelopeFollower::Peak);
+    VuOutput.setDecay(3.0);
+    VuOutput.prepare(newSetup.sampleRate);
+
+    fInputVu.resize(numChannels, 0.0);
+    fOutputVu.resize(numChannels, 0.0);
+
+    buff.resize(numChannels);
+    buff_head.resize(numChannels);
+    for (int channel = 0; channel < numChannels; channel++)
+    {
+        buff[channel].resize(newSetup.maxSamplesPerBlock, 0.0);
+        buff_head[channel] = buff[channel].data();
+    }
 	//--- called before any processing ----
 	return AudioEffect::setupProcessing (newSetup);
 }
@@ -241,18 +325,18 @@ tresult PLUGIN_API VLC_CompProcessor::setState (IBStream* state)
     if (streamer.readDouble(savedSoftBypass) == false) return kResultFalse;
     
     pBypass     = savedBypass > 0;
-    pZoom  = savedZoom;
-    pOS    = static_cast<overSample>(Steinberg::FromNormalized<ParamValue> (savedOS, overSample_num));
+    pZoom       = savedZoom;
+    pOS         = static_cast<overSample>(Steinberg::FromNormalized<ParamValue> (savedOS, overSample_num));
     pInput      = savedInput;
     pOutput     = savedOutput;
-    pRMS_PEAK     = savedRMS_PEAK;
+    pRMS_PEAK   = savedRMS_PEAK;
     pAttack     = savedAttack;
-    pRelease     = savedRelease;
-    pThreshold     = savedThreshold;
-    pRatio     = savedRatio;
-    pKnee     = savedKnee;
+    pRelease    = savedRelease;
+    pThreshold  = savedThreshold;
+    pRatio      = savedRatio;
+    pKnee       = savedKnee;
     pMakeup     = savedMakeup;
-    pMix     = savedMix;
+    pMix        = savedMix;
     pSoftBypass = savedSoftBypass;
 
 	return kResultOk;
@@ -411,6 +495,8 @@ void VLC_CompProcessor::processAudio(
             outputs[i_chan][i] = outputs[i_chan][i] * pMix + p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * (1.0 - pMix);
             outputs[i_chan][i] *= outputGain;
 
+            buff[i_chan].at(i) = p_la.p_buf[p_la.i_pos].pf_vals[i_chan];
+
             /* Update the delayed buffer value */
             p_la.p_buf[p_la.i_pos].pf_vals[i_chan] = f_x;
         }
@@ -419,6 +505,15 @@ void VLC_CompProcessor::processAudio(
         p_la.i_pos = ( p_la.i_pos + 1 ) % ( p_la.i_count );
     }
     
+    VuInput.update(buff_head.data(), numChannels, sampleFrames);
+    VuOutput.update<SampleType>(outputs, numChannels, sampleFrames);
+
+    for (int ch = 0; ch < numChannels; ch++)
+    {
+        fInputVu[ch]  = VuInput.getEnv(ch);
+        fOutputVu[ch] = VuOutput.getEnv(ch);
+    }
+
     return;
 }
 

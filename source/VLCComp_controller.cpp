@@ -8,10 +8,246 @@
 #include "vstgui/plugin-bindings/vst3editor.h"
 #include "base/source/fstreamer.h"
 
+#include "vstgui/vstgui_uidescription.h"
+#include "vstgui/uidescription/detail/uiviewcreatorattributes.h"
+
 using namespace Steinberg;
 
-namespace yg331 {
+static const std::string kAttrVuOnColor = "vu-on-color";
+static const std::string kAttrVuOffColor = "vu-off-color";
+namespace VSTGUI {
+class MyVUMeterFactory : public ViewCreatorAdapter
+{
+public:
+    //register this class with the view factory
+    MyVUMeterFactory() { UIViewFactory::registerViewCreator(*this); }
 
+    //return an unique name here
+    IdStringPtr getViewName() const override { return "My Vu Meter"; }
+
+    //return the name here from where your custom view inherites.
+    //    Your view automatically supports the attributes from it.
+    IdStringPtr getBaseViewName() const override { return UIViewCreator::kCControl; }
+
+    //create your view here.
+    //    Note you don't need to apply attributes here as
+    //    the apply method will be called with this new view
+    CView* create(const UIAttributes & attributes, const IUIDescription * description) const override
+    {
+        CRect size(CPoint(45, 45), CPoint(400, 150));
+        return new MyVuMeter(size, 2);
+    }
+    bool apply(
+        CView* view,
+        const UIAttributes& attributes,
+        const IUIDescription* description) const
+    {
+        auto* vuMeter = dynamic_cast<MyVuMeter*> (view);
+
+        if (!vuMeter)
+            return false;
+
+        const auto* attr = attributes.getAttributeValue(UIViewCreator::kAttrOrientation);
+        if (attr)
+            vuMeter->setStyle(*attr == UIViewCreator::strVertical ? MyVuMeter::kVertical : MyVuMeter::kHorizontal);
+
+        CColor color;
+        if (UIViewCreator::stringToColor(attributes.getAttributeValue(kAttrVuOnColor), color, description))
+            vuMeter->setVuOnColor(color);
+        if (UIViewCreator::stringToColor(attributes.getAttributeValue(kAttrVuOffColor), color, description))
+            vuMeter->setVuOffColor(color);
+
+        return true;
+    }
+
+    bool getAttributeNames(StringList& attributeNames) const
+    {
+        attributeNames.emplace_back(UIViewCreator::kAttrOrientation);
+        attributeNames.emplace_back(kAttrVuOnColor);
+        attributeNames.emplace_back(kAttrVuOffColor);
+        return true;
+    }
+
+    AttrType getAttributeType(const std::string& attributeName) const
+    {
+        if (attributeName == UIViewCreator::kAttrOrientation)
+            return kListType;
+        if (attributeName == kAttrVuOnColor)
+            return kColorType;
+        if (attributeName == kAttrVuOffColor)
+            return kColorType;
+        return kUnknownType;
+    }
+
+    //------------------------------------------------------------------------
+    bool getAttributeValue(
+        CView* view,
+        const string& attributeName,
+        string& stringValue,
+        const IUIDescription* desc) const
+    {
+        auto* vuMeter = dynamic_cast<MyVuMeter*> (view);
+
+        if (!vuMeter)
+            return false;
+
+        if (attributeName == UIViewCreator::kAttrOrientation)
+        {
+            if (vuMeter->getStyle() & MyVuMeter::kVertical)
+                stringValue = UIViewCreator::strVertical;
+            else
+                stringValue = UIViewCreator::strHorizontal;
+            return true;
+        }
+        else if (attributeName == kAttrVuOnColor)
+        {
+            UIViewCreator::colorToString(vuMeter->getVuOnColor(), stringValue, desc);
+            return true;
+        }
+        else if (attributeName == kAttrVuOffColor)
+        {
+            UIViewCreator::colorToString(vuMeter->getVuOffColor(), stringValue, desc);
+            return true;
+        }
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    bool getPossibleListValues(
+        const string& attributeName,
+        ConstStringPtrList& values) const
+    {
+        if (attributeName == UIViewCreator::kAttrOrientation)
+        {
+            return UIViewCreator::getStandardAttributeListValues(UIViewCreator::kAttrOrientation, values);
+        }
+        return false;
+    }
+
+};
+
+//create a static instance so that it registers itself with the view factory
+MyVUMeterFactory __gMyVUMeterFactory;
+} // namespace VSTGUI
+
+namespace yg331 {
+//------------------------------------------------------------------------
+// VuMeterController
+//------------------------------------------------------------------------
+template<> void VLC_CompController::UIVuMeterController::updateVuMeterValue()
+{
+    if (mainController) {
+        if (inMeter)          inMeter->      setValue(mainController->getVuMeterByTag(kIn));
+        if (outMeter)         outMeter->     setValueNormalized(mainController->getVuMeterByTag(kOut));
+        if (grMeter)          grMeter->      setValueNormalized(mainController->getVuMeterByTag(kGR));
+        if (vuMeterInL)       vuMeterInL->   setValue(mainController->getVuMeterByTag(kInL));
+        if (vuMeterInR)       vuMeterInR->   setValue(mainController->getVuMeterByTag(kInR));
+        if (vuMeterOutL)      vuMeterOutL->  setValueNormalized(mainController->getVuMeterByTag(kOutL));
+        if (vuMeterOutR)      vuMeterOutR->  setValueNormalized(mainController->getVuMeterByTag(kOutR));
+        if (vuMeterGR)        vuMeterGR->    setValueNormalized(mainController->getVuMeterByTag(kGR));
+    }
+}
+
+template<> VSTGUI::CView* VLC_CompController::UIVuMeterController::verifyView(
+                                            VSTGUI::CView* view,
+                                            const VSTGUI::UIAttributes&   /*attributes*/,
+                                            const VSTGUI::IUIDescription* /*description*/
+)
+{
+    if (CParamDisplay* control = dynamic_cast<CParamDisplay*>(view); control)
+    {
+        if (control->getTag() == kIn) {
+            inMeter = control;
+            inMeter->registerViewListener(this);
+            inMeter->CParamDisplay::setValue(inMeter->getDefaultValue());
+        }
+        if (control->getTag() == kOut) {
+            outMeter = control;
+            outMeter->registerViewListener(this);
+            outMeter->CParamDisplay::setValue(outMeter->getDefaultValue());
+        }
+        if (control->getTag() == kGR) {
+            grMeter = control;
+            grMeter->registerViewListener(this);
+            grMeter->CParamDisplay::setValue(grMeter->getDefaultValue());
+        }
+    }
+
+    if (MyVuMeter* control = dynamic_cast<MyVuMeter*>(view); control) {
+        if (control->getTag() == kInL) {
+            vuMeterInL = control;
+            vuMeterInL->registerViewListener(this);
+            ///vuMeterInL->setValue(0.0);
+        }
+        if (control->getTag() == kInR) {
+            vuMeterInR = control;
+            vuMeterInR->registerViewListener(this);
+            //vuMeterInR->setValue(0.0);
+        }
+        if (control->getTag() == kOutL) {
+            vuMeterOutL = control;
+            vuMeterOutL->registerViewListener(this);
+            //vuMeterOutL->setValue(0.0);
+        }
+        if (control->getTag() == kOutR) {
+            vuMeterOutR = control;
+            vuMeterOutR->registerViewListener(this);
+            //vuMeterOutR->setValue(0.0);
+        }
+        if (control->getTag() == kGR) {
+            vuMeterGR = control;
+            vuMeterGR->registerViewListener(this);
+            //vuMeterGR->setValue(0.0);
+        }
+    }
+
+    return view;
+}
+
+template<> void VLC_CompController::UIVuMeterController::viewWillDelete(VSTGUI::CView* view)
+{
+    if (dynamic_cast<CParamDisplay*> (view) == inMeter && inMeter)
+    {
+        inMeter->unregisterViewListener(this);
+        inMeter = nullptr;
+    }
+    if (dynamic_cast<CParamDisplay*> (view) == outMeter && outMeter)
+    {
+        outMeter->unregisterViewListener(this);
+        outMeter = nullptr;
+    }
+    if (dynamic_cast<CParamDisplay*> (view) == grMeter && grMeter)
+    {
+        grMeter->unregisterViewListener(this);
+        grMeter = nullptr;
+    }
+    
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterInL && vuMeterInL)
+    {
+        vuMeterInL->unregisterViewListener(this);
+        vuMeterInL = nullptr;
+    }
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterInR && vuMeterInR)
+    {
+        vuMeterInR->unregisterViewListener(this);
+        vuMeterInR = nullptr;
+    }
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterOutL && vuMeterOutL)
+    {
+        vuMeterOutL->unregisterViewListener(this);
+        vuMeterOutL = nullptr;
+    }
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterOutR && vuMeterOutR)
+    {
+        vuMeterOutR->unregisterViewListener(this);
+        vuMeterOutR = nullptr;
+    }
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterGR && vuMeterGR)
+    {
+        vuMeterGR->unregisterViewListener(this);
+        vuMeterGR = nullptr;
+    }
+}
 //------------------------------------------------------------------------
 // VLC_CompController Implementation
 //------------------------------------------------------------------------
@@ -290,6 +526,21 @@ IPlugView* PLUGIN_API VLC_CompController::createView (FIDString name)
 	return nullptr;
 }
 
+VSTGUI::IController* VLC_CompController::createSubController(
+    VSTGUI::UTF8StringPtr name,
+    const VSTGUI::IUIDescription* description,
+    VSTGUI::VST3Editor* editor)
+{
+    if (VSTGUI::UTF8StringView(name) == "VuMeterController")
+    {
+        auto* controller = new UIVuMeterController(this);
+        addUIVuMeterController(controller);
+        return controller;
+    }
+    return nullptr;
+};
+
+
 //------------------------------------------------------------------------
 tresult PLUGIN_API VLC_CompController::setParamNormalized (Vst::ParamID tag, Vst::ParamValue value)
 {
@@ -352,6 +603,33 @@ void PLUGIN_API VLC_CompController::update(FUnknown* changedUnknown, int32 messa
                 editor->setZoomFactor(zoomFactors[index].factor);
         }
     }
+}
+//------------------------------------------------------------------------
+tresult PLUGIN_API VLC_CompController::notify(Vst::IMessage* message)
+{
+    if (!message)
+        return kInvalidArgument;
+    
+    if (strcmp (message->getMessageID (), "VUmeter") == 0)
+    {
+        double data = 0.0;
+        int64 update = 0.0;
+        if (message->getAttributes ()->getFloat ("vuInL",    data) == kResultTrue) vuInL    = data;
+        if (message->getAttributes ()->getFloat ("vuInR",    data) == kResultTrue) vuInR    = data;
+        if (message->getAttributes ()->getFloat ("vuOutL",   data) == kResultTrue) vuOutL   = data;
+        if (message->getAttributes ()->getFloat ("vuOutR",   data) == kResultTrue) vuOutR   = data;
+        if (message->getAttributes ()->getFloat ("vuGR",     data) == kResultTrue) vuGR     = data;
+        if (message->getAttributes ()->getInt   ("update", update) == kResultTrue) {
+            if (!vuMeterControllers.empty()) {
+                for (auto iter = vuMeterControllers.begin(); iter != vuMeterControllers.end(); iter++) {
+                    (*iter)->updateVuMeterValue();
+                }
+            }
+        }
+        return kResultOk;
+    }
+
+    return EditControllerEx1::notify(message);
 }
 
 //------------------------------------------------------------------------

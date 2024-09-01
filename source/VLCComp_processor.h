@@ -8,6 +8,119 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 
 namespace yg331 {
+class Decibels
+{
+public:
+    template <typename Type>
+    static Type decibelsToGain(
+        Type decibels,
+        Type minusInfinityDb = Type(defaultMinusInfinitydB)
+    )
+    {
+        return decibels > minusInfinityDb
+                        ? std::pow(Type(10.0), decibels * Type(0.05))
+                        : Type();
+    }
+
+    template <typename Type>
+    static Type gainToDecibels(
+        Type gain,
+        Type minusInfinityDb = Type(defaultMinusInfinitydB)
+    )
+    {
+        return gain > Type()
+                    ? (std::max)(minusInfinityDb, static_cast<Type> (std::log10(gain)) * Type(20.0))
+                    : minusInfinityDb;
+    }
+
+private:
+    enum { defaultMinusInfinitydB = -100 };
+    Decibels() = delete;
+};
+class LevelEnvelopeFollower
+{
+public:
+    LevelEnvelopeFollower() = default;
+
+    ~LevelEnvelopeFollower() {
+        state.clear();
+        state.shrink_to_fit();
+    }
+
+    void setChannel(const int channels) {
+        state.resize(channels, 0.0);
+    }
+
+    enum detectionType {Peak, RMS};
+    void setType(detectionType _type)
+    {
+        type = _type;
+    }
+
+    void setDecay(double val)
+    {
+        DecayInSeconds = val;
+    }
+
+    void prepare(const double& fs)
+    {
+        sampleRate = fs;
+
+        double attackTimeInSeconds = 0.01 * DecayInSeconds;
+        alphaAttack = exp(-1.0 / (sampleRate * attackTimeInSeconds));
+
+        double releaseTimeInSeconds = DecayInSeconds;
+        alphaRelease = exp(-1.0 / (sampleRate * releaseTimeInSeconds));
+
+        for (auto& s : state)
+            s = Decibels::gainToDecibels(0.0);
+    }
+
+    template <typename SampleType>
+    void update(SampleType** channelData, int numChannels, int numSamples)
+    {
+        if (numChannels <= 0) return;
+        if (numSamples <= 0) return;
+        if (numChannels > state.size()) return;
+
+        for (int ch = 0; ch < numChannels; ch++) {
+            for (int i = 0; i < numSamples; i++) {
+                if (type == Peak) {
+                    double in = Decibels::gainToDecibels(std::abs(channelData[ch][i]));
+                    if (in > state[ch])
+                        state[ch] = alphaAttack * state[ch] + (1.0 - alphaAttack) * in;
+                    else
+                        state[ch] = alphaRelease * state[ch] + (1.0 - alphaRelease) * in;
+                }
+                else {
+                    double pwr = Decibels::gainToDecibels(std::abs(channelData[ch][i]) * std::abs(channelData[ch][i]));
+                    state[ch] = alphaRelease * state[ch] + (1.0 - alphaRelease) * pwr;
+                }
+                
+            }
+        }
+    }
+    
+    double getEnv(int channel) {
+        if (channel < 0) return 0.0;
+        if (channel >= state.size()) return 0.0;
+
+        if (type == Peak) return Decibels::decibelsToGain(state[channel]);
+        else return std::sqrt(Decibels::decibelsToGain(state[channel]));
+    }
+
+private:
+    double sampleRate = 0.0;
+
+    double DecayInSeconds = 0.5;
+    double DecayCoef = 0.99992;
+
+    detectionType type = Peak;
+
+    std::vector<double> state;
+    double alphaAttack = 0.0;
+    double alphaRelease = 0.0;
+};
 //------------------------------------------------------------------------
 //  VLC_CompProcessor
 //------------------------------------------------------------------------
@@ -81,6 +194,17 @@ protected:
     
     ParamValue pZoom  = 2.0 / 6.0;
     ParamValue pOS = 0.0;
+    
+    // VU metering ----------------------------------------------------------------
+    LevelEnvelopeFollower VuInput, VuOutput;
+
+    static SMTG_CONSTEXPR ParamValue init_meter = 0.0;
+    ParamValue Meter = init_meter;
+    std::vector<std::vector<ParamValue>> buff;
+    std::vector<ParamValue*> buff_head;
+    std::vector<ParamValue> fInputVu;
+    std::vector<ParamValue> fOutputVu;
+    ParamValue fMeterVu = init_meter;
     
     // Internal Variables
     SampleRate SR = 48000.0;
