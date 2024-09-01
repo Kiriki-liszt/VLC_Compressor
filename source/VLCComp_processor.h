@@ -8,35 +8,6 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 
 namespace yg331 {
-class Decibels
-{
-public:
-    template <typename Type>
-    static Type decibelsToGain(
-        Type decibels,
-        Type minusInfinityDb = Type(defaultMinusInfinitydB)
-    )
-    {
-        return decibels > minusInfinityDb
-                        ? std::pow(Type(10.0), decibels * Type(0.05))
-                        : Type();
-    }
-
-    template <typename Type>
-    static Type gainToDecibels(
-        Type gain,
-        Type minusInfinityDb = Type(defaultMinusInfinitydB)
-    )
-    {
-        return gain > Type()
-                    ? (std::max)(minusInfinityDb, static_cast<Type> (std::log10(gain)) * Type(20.0))
-                    : minusInfinityDb;
-    }
-
-private:
-    enum { defaultMinusInfinitydB = -100 };
-    Decibels() = delete;
-};
 //------------------------------------------------------------------------
 //  VLC_CompProcessor
 //------------------------------------------------------------------------
@@ -110,6 +81,7 @@ protected:
     ParamValue pOS = 0.0;
     
     // Internal Variables
+    SampleRate SR = 48000.0;
     Sample64 f_num = 0.0;
     
     Sample64 f_sum = 0.0;

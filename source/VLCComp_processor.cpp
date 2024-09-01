@@ -174,13 +174,14 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
 
 uint32 PLUGIN_API VLC_CompProcessor::getLatencySamples()
 {
-    return 0;
+    return Round( Clamp( SR * 0.01, 1.0, LOOKAHEAD_SIZE ) );
 }
 
 //------------------------------------------------------------------------
 tresult PLUGIN_API VLC_CompProcessor::setupProcessing (Vst::ProcessSetup& newSetup)
 {
     /* Calculate the RMS and lookahead sizes from the sample rate */
+    SR = newSetup.sampleRate;
     f_num = 0.01 * newSetup.sampleRate;
     p_rms.i_count = Round( Clamp( 0.5 * f_num, 1.0, RMS_BUF_SIZE ) );
     p_la.i_count = Round( Clamp( f_num, 1.0, LOOKAHEAD_SIZE ) );
@@ -424,7 +425,7 @@ void VLC_CompProcessor::processAudio(
 
             /* Output the compressed delayed buffer value */
             outputs[i_chan][i] = p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * f_gain * f_mug;
-            // outputs[i_chan][i] = outputs[i_chan][i] * pMix + p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * (1.0 - pMix);
+            outputs[i_chan][i] = outputs[i_chan][i] * pMix + p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * (1.0 - pMix);
 
             /* Update the delayed buffer value */
             p_la.p_buf[p_la.i_pos].pf_vals[i_chan] = f_x;

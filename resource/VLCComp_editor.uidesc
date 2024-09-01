@@ -4,6 +4,7 @@
 		"bitmaps": {},
 		"fonts": {},
 		"colors": {},
+		"gradients": {},
 		"control-tags": {
 			"Attack": "6",
 			"Bypass": "0",
@@ -45,16 +46,25 @@
 			},
 			"UIAttributesController": {},
 			"UIViewCreatorDataSource": {
-				"SelectedRow": "15"
+				"SelectedRow": "4"
 			},
 			"UITagsDataSource": {
+				"SelectedRow": "-1"
+			},
+			"UIGradientsDataSource": {
+				"SelectedRow": "-1"
+			},
+			"UIBitmapsDataSource": {
+				"SelectedRow": "-1"
+			},
+			"UIColorsDataSource": {
 				"SelectedRow": "-1"
 			}
 		},
 		"templates": {
 			"view": {
 				"attributes": {
-					"background-color": "~ BlueCColor",
+					"background-color": "~ GreyCColor",
 					"background-color-draw-style": "filled and stroked",
 					"class": "CViewContainer",
 					"mouse-enabled": "true",
@@ -154,11 +164,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "Attack",
 									"default-value": "0.0589711",
 									"font": "~ NormalFont",
@@ -166,16 +176,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -185,6 +198,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "81.20",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
@@ -278,11 +292,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "Release",
 									"default-value": "0.122807",
 									"font": "~ NormalFont",
@@ -290,16 +304,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -309,6 +326,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "401.00",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
@@ -402,11 +420,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "Ratio",
 									"default-value": "0.157895",
 									"font": "~ NormalFont",
@@ -414,16 +432,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -433,6 +454,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "4.80",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
@@ -526,11 +548,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "Knee",
 									"default-value": "0.444444",
 									"font": "~ NormalFont",
@@ -538,16 +560,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -557,6 +582,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "2.80",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
@@ -650,11 +676,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "Makeup",
 									"default-value": "0",
 									"font": "~ NormalFont",
@@ -662,16 +688,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -681,6 +710,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "0.0000",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
@@ -774,11 +804,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "Mix",
 									"default-value": "1",
 									"font": "~ NormalFont",
@@ -786,16 +816,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -805,6 +838,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "100.00",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
@@ -898,11 +932,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "RMS/PEAK",
 									"default-value": "0.2",
 									"font": "~ NormalFont",
@@ -910,16 +944,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -929,6 +966,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "0.00",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
@@ -1022,11 +1060,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "Threshold",
 									"default-value": "0.633333",
 									"font": "~ NormalFont",
@@ -1034,16 +1072,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -1053,6 +1094,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "0.00",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
@@ -1146,11 +1188,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "Input",
 									"default-value": "0.5",
 									"font": "~ NormalFont",
@@ -1158,16 +1200,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -1177,6 +1222,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "-6.79",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
@@ -1270,11 +1316,11 @@
 									"wheel-inc-value": "0.1"
 								}
 							},
-							"CParamDisplay": {
+							"CTextEdit": {
 								"attributes": {
 									"back-color": "~ BlackCColor",
 									"background-offset": "0, 0",
-									"class": "CParamDisplay",
+									"class": "CTextEdit",
 									"control-tag": "Output",
 									"default-value": "0.5",
 									"font": "~ NormalFont",
@@ -1282,16 +1328,19 @@
 									"font-color": "~ WhiteCColor",
 									"frame-color": "~ BlackCColor",
 									"frame-width": "1",
+									"immediate-text-change": "false",
 									"max-value": "1",
 									"min-value": "0",
 									"mouse-enabled": "true",
 									"opacity": "1",
 									"origin": "10, 30",
 									"round-rect-radius": "6",
+									"secure-style": "false",
 									"shadow-color": "~ RedCColor",
 									"size": "70, 20",
 									"style-3D-in": "false",
 									"style-3D-out": "false",
+									"style-doubleclick": "false",
 									"style-no-draw": "false",
 									"style-no-frame": "false",
 									"style-no-text": "false",
@@ -1301,6 +1350,7 @@
 									"text-inset": "0, 0",
 									"text-rotation": "0",
 									"text-shadow-offset": "1, 1",
+									"title": "-1.05",
 									"transparent": "false",
 									"value-precision": "2",
 									"wants-focus": "false",
