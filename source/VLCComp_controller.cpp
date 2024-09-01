@@ -145,6 +145,10 @@ template<> void VLC_CompController::UIVuMeterController::updateVuMeterValue()
         if (vuMeterOutL)      vuMeterOutL->  setValue(mainController->getVuMeterByTag(kOutL));
         if (vuMeterOutR)      vuMeterOutR->  setValue(mainController->getVuMeterByTag(kOutR));
         if (vuMeterGR)        vuMeterGR->    setValue(mainController->getVuMeterByTag(kGR));
+        
+        if (inMeter) inMeter->invalid();
+        if (outMeter) outMeter->invalid();
+        if (grMeter) grMeter->invalid();
     }
 }
 
@@ -626,7 +630,7 @@ tresult PLUGIN_API VLC_CompController::notify(Vst::IMessage* message)
                 }
             }
         }
-        //FDebugPrint("vuInL = %f\n",vuInL);
+        FDebugPrint("vuGR = %f\n",vuGR);
         return kResultOk;
     }
 

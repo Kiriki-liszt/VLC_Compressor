@@ -184,6 +184,7 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
 
         for (auto& loop : fInputVu) loop = Lin2Db(loop);
         for (auto& loop : fOutputVu) loop = Lin2Db(loop);
+        fMeterVu = Lin2Db(fMeterVu);
     }
     
     //---send a message
@@ -219,7 +220,7 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
     {
         message->setMessageID ("VUmeter");
         double data = fMeterVu;
-        message->getAttributes ()->setFloat ("vuEffect", data);
+        message->getAttributes ()->setFloat ("vuGR", data);
         sendMessage (message);
     }
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
@@ -400,6 +401,8 @@ void VLC_CompProcessor::processAudio(
     Vst::Sample64 f_knee_max = Db2Lin( f_threshold + f_knee );
     Vst::Sample64 f_ef_a     = f_ga * 0.25;
     //Vst::Sample64 f_ef_ai    = 1.0 - f_ef_a;
+    
+    Vst::Sample64 min_GR = 1.0;
 
     /* Process the current buffer */
     for( int i = 0; i < i_samples; i++ )
@@ -482,6 +485,7 @@ void VLC_CompProcessor::processAudio(
 
         /* Find the total gain */
         f_gain = f_gain * f_ef_a + f_gain_out * (1.0 - f_ef_a); //inertia to the gain change, with quater of attack
+        min_GR = (min_GR > f_gain) ? f_gain : min_GR;
 
         /* Write the resulting buffer to the output */
         //BufferProcess( inputs, outputs, i_channels, f_gain, f_mug, p_la );
@@ -507,6 +511,7 @@ void VLC_CompProcessor::processAudio(
     
     VuInput.update(buff_head.data(), numChannels, sampleFrames);
     VuOutput.update<SampleType>(outputs, numChannels, sampleFrames);
+    fMeterVu = min_GR;
 
     for (int ch = 0; ch < numChannels; ch++)
     {
