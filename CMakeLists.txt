@@ -1,16 +1,21 @@
 cmake_minimum_required(VERSION 3.14.0)
 set(CMAKE_OSX_DEPLOYMENT_TARGET 10.13 CACHE STRING "")
 
-set(vst3sdk_SOURCE_DIR "/Users/yoon/VST_SDK/vst3sdk")
-if(NOT vst3sdk_SOURCE_DIR)
-    message(FATAL_ERROR "Path to VST3 SDK is empty!")
+if(SMTG_MAC)
+    set(vst3sdk_SOURCE_DIR "/Users/yoon/VST_SDK/vst3sdk")
+elseif(SMTG_WIN)
+    set(vst3sdk_SOURCE_DIR "C:/VST_SDK/vst3sdk")
+endif(SMTG_MAC)
+
+if(GITHUB_ACTIONS)
+    set(vst3sdk_SOURCE_DIR ${CMAKE_SOURCE_DIR}/vst3sdk)
 endif()
 
 project(VLC_Compressor
     # This is your plug-in version number. Change it here only.
     # Version number symbols usable in C++ can be found in
     # source/version.h and ${PROJECT_BINARY_DIR}/projectversion.h.
-    VERSION 1.0.0.0 
+    VERSION 0.0.1.0 
     DESCRIPTION "VLC_Compressor VST 3 Plug-in"
 )
 
