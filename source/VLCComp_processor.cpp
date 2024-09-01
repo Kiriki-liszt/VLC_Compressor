@@ -425,7 +425,15 @@ void VLC_CompProcessor::processAudio(
 /*****************************************************************************
  * Helper functions for compressor
  *****************************************************************************/
+double VLC_CompProcessor::Db2Lin(double f_db)
+{
+    return std::pow(10.0, f_db / 20.0);
+}
 
+double VLC_CompProcessor::Lin2Db(double f_lin)
+{
+    return 20.0 * log10(f_lin);
+}
 /* Zero out denormals by adding and subtracting a small number, from Laurent de Soras */
 void VLC_CompProcessor::RoundToZero( Vst::ParamValue *pf_x )
 {

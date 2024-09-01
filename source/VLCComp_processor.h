@@ -105,16 +105,8 @@ protected:
 
     } ls_pcast32;
     
-    static double Db2Lin(double f_db)
-    {
-        return std::pow(10.0, f_db / 20.0);
-    }
-
-    static double Lin2Db(double f_lin)
-    {
-        return 20.0 * log10(f_lin);
-    }
-
+    static double Db2Lin(double f_db);
+    static double Lin2Db(double f_lin);
     static void       RoundToZero     ( ParamValue * );
     static ParamValue Max             ( ParamValue, ParamValue );
     static ParamValue Clamp           ( ParamValue, ParamValue, ParamValue );
