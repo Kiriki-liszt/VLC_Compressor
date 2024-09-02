@@ -146,9 +146,9 @@ template<> void VLC_CompController::UIVuMeterController::updateVuMeterValue()
         if (vuMeterOutR)      vuMeterOutR->  setValue(mainController->getVuMeterByTag(kOutR));
         if (vuMeterGR)        vuMeterGR->    setValue(mainController->getVuMeterByTag(kGR));
         
-        if (inMeter) inMeter->invalid();
+        if (inMeter)  inMeter->invalid();
         if (outMeter) outMeter->invalid();
-        if (grMeter) grMeter->invalid();
+        if (grMeter)  grMeter->invalid();
     }
 }
 
@@ -296,7 +296,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftInput;
     stepCount    = 0;
     auto* ParamIn = new Vst::RangeParameter(STR16("Input"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamIn->setPrecision(2);
+    ParamIn->setPrecision(1);
     parameters.addParameter(ParamIn);
 
     tag          = kParamOutput;
@@ -306,7 +306,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftOutput;
     stepCount    = 0;
     auto* ParamOut = new Vst::RangeParameter(STR16("Output"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamOut->setPrecision(2);
+    ParamOut->setPrecision(1);
     parameters.addParameter(ParamOut);
 
     tag          = kParamRMS_PEAK;
@@ -316,7 +316,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftRMS_PEAK;
     stepCount    = 0;
     auto* ParamRMS_PEAK = new Vst::RangeParameter(STR16("RMS/PEAK"), tag, STR16("%"), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamRMS_PEAK->setPrecision(2);
+    ParamRMS_PEAK->setPrecision(1);
     parameters.addParameter(ParamRMS_PEAK);
 
     tag          = kParamAttack;
@@ -326,7 +326,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftAttack;
     stepCount    = 0;
     auto* ParamAttack = new Vst::RangeParameter(STR16("Attack"), tag, STR16("ms"), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamAttack->setPrecision(2);
+    ParamAttack->setPrecision(1);
     parameters.addParameter(ParamAttack);
 
     tag          = kParamRelease;
@@ -336,7 +336,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftRelease;
     stepCount    = 0;
     auto* ParamRelease = new Vst::RangeParameter(STR16("Release"), tag, STR16("ms"), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamRelease->setPrecision(2);
+    ParamRelease->setPrecision(1);
     parameters.addParameter(ParamRelease);
 
     tag          = kParamThreshold;
@@ -346,7 +346,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftThreshold;
     stepCount    = 0;
     auto* ParamThreshold = new Vst::RangeParameter(STR16("Threshold"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamThreshold->setPrecision(2);
+    ParamThreshold->setPrecision(1);
     parameters.addParameter(ParamThreshold);
 
     tag          = kParamRatio;
@@ -356,7 +356,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftRatio;
     stepCount    = 0;
     auto* ParamRatio = new Vst::RangeParameter(STR16("Ratio"), tag, STR16(""), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamRatio->setPrecision(2);
+    ParamRatio->setPrecision(1);
     parameters.addParameter(ParamRatio);
 
     tag          = kParamKnee;
@@ -366,7 +366,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftKnee;
     stepCount    = 0;
     auto* ParamKnee = new Vst::RangeParameter(STR16("Knee"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamKnee->setPrecision(2);
+    ParamKnee->setPrecision(1);
     parameters.addParameter(ParamKnee);
 
     tag          = kParamMakeup;
@@ -376,7 +376,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftMakeup;
     stepCount    = 0;
     auto* ParamMakeup = new Vst::RangeParameter(STR16("Makeup"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamKnee->setPrecision(2);
+    ParamMakeup->setPrecision(1);
     parameters.addParameter(ParamMakeup);
 
     tag          = kParamMix;
@@ -386,7 +386,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     defaultPlain = dftMix;
     stepCount    = 0;
     auto* ParamMix = new Vst::RangeParameter(STR16("Mix"), tag, STR16("%"), minPlain, maxPlain, defaultPlain, stepCount, flags);
-    ParamMix->setPrecision(2);
+    ParamMix->setPrecision(1);
     parameters.addParameter(ParamMix);
 
     tag          = kParamSoftBypass;

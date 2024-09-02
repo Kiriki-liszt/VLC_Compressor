@@ -256,7 +256,7 @@
 							"style-no-draw": "false",
 							"style-no-frame": "false",
 							"style-no-text": "false",
-							"style-round-rect": "false",
+							"style-round-rect": "true",
 							"style-shadow-text": "false",
 							"text-alignment": "center",
 							"text-inset": "0, 0",
@@ -416,7 +416,7 @@
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
 													"transparent": "false",
-													"value-precision": "2",
+													"value-precision": "1",
 													"wants-focus": "false",
 													"wheel-inc-value": "0.1"
 												}
@@ -435,7 +435,7 @@
 													"size": "20, 240",
 													"transparent": "false",
 													"vu-off-color": "~ BlackCColor",
-													"vu-on-color": "~ WhiteCColor",
+													"vu-on-color": "Pantone P 179-1 C Color | #F2F1F0",
 													"wants-focus": "false",
 													"wheel-inc-value": "0.1"
 												}
@@ -454,7 +454,7 @@
 													"size": "20, 240",
 													"transparent": "false",
 													"vu-off-color": "~ BlackCColor",
-													"vu-on-color": "~ WhiteCColor",
+													"vu-on-color": "Pantone P 179-1 C Color | #F2F1F0",
 													"wants-focus": "false",
 													"wheel-inc-value": "0.1"
 												}
@@ -526,8 +526,8 @@
 													"origin": "5, 35",
 													"size": "20, 240",
 													"transparent": "false",
-													"vu-off-color": "~ BlackCColor",
-													"vu-on-color": "~ WhiteCColor",
+													"vu-off-color": "Pantone P 179-1 C Color | #F2F1F0",
+													"vu-on-color": "~ BlackCColor",
 													"wants-focus": "false",
 													"wheel-inc-value": "0.1"
 												}
@@ -564,7 +564,7 @@
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
 													"transparent": "false",
-													"value-precision": "2",
+													"value-precision": "1",
 													"wants-focus": "false",
 													"wheel-inc-value": "0.1"
 												}
@@ -637,7 +637,7 @@
 													"size": "20, 240",
 													"transparent": "false",
 													"vu-off-color": "~ BlackCColor",
-													"vu-on-color": "~ WhiteCColor",
+													"vu-on-color": "Pantone P 179-1 C Color | #F2F1F0",
 													"wants-focus": "false",
 													"wheel-inc-value": "0.1"
 												}
@@ -656,7 +656,7 @@
 													"size": "20, 240",
 													"transparent": "false",
 													"vu-off-color": "~ BlackCColor",
-													"vu-on-color": "~ WhiteCColor",
+													"vu-on-color": "Pantone P 179-1 C Color | #F2F1F0",
 													"wants-focus": "false",
 													"wheel-inc-value": "0.1"
 												}
@@ -693,7 +693,7 @@
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
 													"transparent": "false",
-													"value-precision": "2",
+													"value-precision": "1",
 													"wants-focus": "false",
 													"wheel-inc-value": "0.1"
 												}
@@ -927,7 +927,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "-11.00",
+													"title": "-11.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -1242,7 +1242,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "4.00",
+													"title": "4.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -1557,7 +1557,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "5.00",
+													"title": "1.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -1872,9 +1872,9 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "0.0000",
+													"title": "0.0",
 													"transparent": "false",
-													"value-precision": "2",
+													"value-precision": "1",
 													"wants-focus": "false",
 													"wheel-inc-value": "0.1"
 												}
@@ -2187,7 +2187,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "100.00",
+													"title": "100.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -2502,7 +2502,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "25.00",
+													"title": "25.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -2817,7 +2817,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "100.00",
+													"title": "100.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -3132,7 +3132,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "0.00",
+													"title": "-7.3",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -3447,7 +3447,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "0.00",
+													"title": "0.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -3762,7 +3762,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "20.00",
+													"title": "20.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
