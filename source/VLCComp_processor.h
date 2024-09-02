@@ -7,6 +7,8 @@
 #include "VLCComp_shared.h"
 #include "public.sdk/source/vst/vstaudioeffect.h"
 
+#include <cmath>
+
 namespace yg331 {
 class Decibels
 {
