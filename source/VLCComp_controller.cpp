@@ -630,7 +630,6 @@ tresult PLUGIN_API VLC_CompController::notify(Vst::IMessage* message)
                 }
             }
         }
-        FDebugPrint("vuGR = %f\n",vuGR);
         return kResultOk;
     }
 
