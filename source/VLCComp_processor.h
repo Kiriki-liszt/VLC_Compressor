@@ -169,13 +169,17 @@ protected:
     
 #define Plain2Norm(v, min, max) ((v - min) / (max - min))
 #define Norm2Plain(v, min, max) (v * (max - min) + min)
+    
+#define LogPlain2Norm(v, min, max) (std::log(v / min) / std::log(max / min))
+#define LogNorm2Plain(v, min, max) (min * std::exp(v * std::log(max / min)))
+    
     // Parameters
     bool       pBypass    = false;
     ParamValue pInput     = Plain2Norm(dftInput,  minInput,  maxInput);
     ParamValue pOutput    = Plain2Norm(dftOutput, minOutput, maxOutput);
     
     ParamValue pRMS_PEAK  = Plain2Norm(dftRMS_PEAK,  minRMS_PEAK,  maxRMS_PEAK);
-    ParamValue pAttack    = Plain2Norm(dftAttack,    minAttack,    maxAttack);
+    ParamValue pAttack    = LogPlain2Norm(dftAttack,    minAttack,    maxAttack);
     ParamValue pRelease   = Plain2Norm(dftRelease,   minRelease,   maxRelease);
     ParamValue pThreshold = Plain2Norm(dftThreshold, minThreshold, maxThreshold);
     ParamValue pRatio     = Plain2Norm(dftRatio,     minRatio,     maxRatio);

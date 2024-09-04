@@ -7,6 +7,7 @@
 
 #include "vstgui/plugin-bindings/vst3editor.h"
 #include "base/source/fstreamer.h"
+#include "pluginterfaces/base/ustring.h"
 
 #include "vstgui/vstgui_uidescription.h"
 #include "vstgui/uidescription/detail/uiviewcreatorattributes.h"
@@ -212,6 +213,106 @@ template<> void VLC_CompController::UIVuMeterController::viewWillDelete(VSTGUI::
     if (dynamic_cast<MyVuMeter*>(view) == vuMeterOutR && vuMeterOutR) { vuMeterOutR->unregisterViewListener(this); vuMeterOutR = nullptr; }
     if (dynamic_cast<MyVuMeter*>(view) == vuMeterGR   && vuMeterGR)   { vuMeterGR->  unregisterViewListener(this); vuMeterGR   = nullptr; }
 }
+
+//------------------------------------------------------------------------
+// LogRangeParameter Declaration
+//------------------------------------------------------------------------
+class LogRangeParameter : public Vst::RangeParameter
+{
+public:
+    using RangeParameter::RangeParameter;
+    
+    LogRangeParameter (const Vst::TChar* title, Vst::ParamID tag, const Vst::TChar* units = nullptr,
+                       Vst::ParamValue minPlain = 0., Vst::ParamValue maxPlain = 1.,
+                       Vst::ParamValue defaultValuePlain = 0., int32 stepCount = 0,
+                       int32 flags = Steinberg::Vst::ParameterInfo::kCanAutomate, Vst::UnitID unitID = Steinberg::Vst::kRootUnitId,
+                       const Vst::TChar* shortTitle = nullptr)
+    : Vst::RangeParameter(title, tag, units, minPlain, maxPlain, defaultValuePlain, stepCount, flags, unitID, shortTitle)
+    {
+        UString (info.title, str16BufferSize (Vst::String128)).assign (title);
+        if (units)
+            UString (info.units, str16BufferSize (Vst::String128)).assign (units);
+        if (shortTitle)
+            UString (info.shortTitle, str16BufferSize (Vst::String128)).assign (shortTitle);
+
+        info.stepCount = stepCount;
+        info.defaultNormalizedValue = valueNormalized = toNormalized (defaultValuePlain);
+        info.flags = flags;
+        info.id = tag;
+        info.unitId = unitID;
+    }
+    
+    /** Converts a normalized value to plain value (e.g. 0.5 to 10000.0Hz). */
+    Vst::ParamValue toPlain(Vst::ParamValue _valueNormalized) const SMTG_OVERRIDE;
+    
+    /** Converts a plain value to a normalized value (e.g. 10000 to 0.5). */
+    Vst::ParamValue toNormalized(Vst::ParamValue plainValue) const SMTG_OVERRIDE;
+    
+    /** Converts a normalized value to a string. */
+    void toString(Vst::ParamValue _valueNormalized, Vst::String128 string) const SMTG_OVERRIDE;
+};
+//------------------------------------------------------------------------
+// LogRangeParameter Implementation
+//------------------------------------------------------------------------
+Vst::ParamValue LogRangeParameter::toPlain(Vst::ParamValue _valueNormalized) const
+{
+    double FREQ_LOG_MAX = std::log(getMax() / getMin());
+    double tmp = getMin() * std::exp(FREQ_LOG_MAX * _valueNormalized);
+    double freq = (std::max)((std::min)(tmp, getMax()), getMin());
+    return freq;
+    //return _valueNormalized * (getMax() - getMin()) + getMin();
+}
+
+//------------------------------------------------------------------------
+Vst::ParamValue LogRangeParameter::toNormalized(Vst::ParamValue plainValue) const
+{
+    SMTG_ASSERT(getMax() - getMin() != 0);
+    double FREQ_LOG_MAX = std::log(getMax() / getMin());
+    return std::log(plainValue / getMin()) / FREQ_LOG_MAX;
+    //return (plainValue - getMin()) / (getMax() - getMin());
+}
+
+void LogRangeParameter::toString(Vst::ParamValue _valueNormalized, Vst::String128 string) const
+{
+    {
+        //Parameter::toString(toPlain(_valueNormalized), string);
+        UString wrapper(string, str16BufferSize(Vst::String128));
+        {
+            if (!wrapper.printFloat(toPlain(_valueNormalized), precision))
+                string[0] = 0;
+            wrapper.append(STR16(" "));
+            wrapper.append(getInfo().units);
+        }
+    }
+}
+
+
+//------------------------------------------------------------------------
+// LinRangeParameter Declaration
+//------------------------------------------------------------------------
+class LinRangeParameter : public Vst::RangeParameter
+{
+public:
+    using RangeParameter::RangeParameter;
+    void toString(Vst::ParamValue _valueNormalized, Vst::String128 string) const SMTG_OVERRIDE;
+};
+//------------------------------------------------------------------------
+// LinRangeParameter Implementation
+//------------------------------------------------------------------------
+void LinRangeParameter::toString(Vst::ParamValue _valueNormalized, Vst::String128 string) const
+{
+    {
+        //Parameter::toString(toPlain(_valueNormalized), string);
+        UString wrapper(string, str16BufferSize(Vst::String128));
+        {
+            if (!wrapper.printFloat(toPlain(_valueNormalized), precision))
+                string[0] = 0;
+            wrapper.append(STR16(" "));
+            wrapper.append(getInfo().units);
+        }
+    }
+}
+
 //------------------------------------------------------------------------
 // VLC_CompController Implementation
 //------------------------------------------------------------------------
@@ -255,7 +356,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     maxPlain     = maxInput;
     defaultPlain = dftInput;
     stepCount    = 0;
-    auto* ParamIn = new Vst::RangeParameter(STR16("Input"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
+    auto* ParamIn = new LinRangeParameter(STR16("Input"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
     ParamIn->setPrecision(1);
     parameters.addParameter(ParamIn);
 
@@ -265,7 +366,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     maxPlain     = maxOutput;
     defaultPlain = dftOutput;
     stepCount    = 0;
-    auto* ParamOut = new Vst::RangeParameter(STR16("Output"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
+    auto* ParamOut = new LinRangeParameter(STR16("Output"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
     ParamOut->setPrecision(1);
     parameters.addParameter(ParamOut);
 
@@ -275,7 +376,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     maxPlain     = maxRMS_PEAK;
     defaultPlain = dftRMS_PEAK;
     stepCount    = 0;
-    auto* ParamRMS_PEAK = new Vst::RangeParameter(STR16("RMS/PEAK"), tag, STR16("%"), minPlain, maxPlain, defaultPlain, stepCount, flags);
+    auto* ParamRMS_PEAK = new LinRangeParameter(STR16("RMS/PEAK"), tag, STR16("%"), minPlain, maxPlain, defaultPlain, stepCount, flags);
     ParamRMS_PEAK->setPrecision(1);
     parameters.addParameter(ParamRMS_PEAK);
 
@@ -285,7 +386,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     maxPlain     = maxAttack;
     defaultPlain = dftAttack;
     stepCount    = 0;
-    auto* ParamAttack = new Vst::RangeParameter(STR16("Attack"), tag, STR16("ms"), minPlain, maxPlain, defaultPlain, stepCount, flags);
+    auto* ParamAttack = new LogRangeParameter(STR16("Attack"), tag, STR16("ms"), minPlain, maxPlain, defaultPlain, stepCount, flags);
     ParamAttack->setPrecision(1);
     parameters.addParameter(ParamAttack);
 
@@ -295,7 +396,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     maxPlain     = maxRelease;
     defaultPlain = dftRelease;
     stepCount    = 0;
-    auto* ParamRelease = new Vst::RangeParameter(STR16("Release"), tag, STR16("ms"), minPlain, maxPlain, defaultPlain, stepCount, flags);
+    auto* ParamRelease = new LinRangeParameter(STR16("Release"), tag, STR16("ms"), minPlain, maxPlain, defaultPlain, stepCount, flags);
     ParamRelease->setPrecision(1);
     parameters.addParameter(ParamRelease);
 
@@ -305,7 +406,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     maxPlain     = maxThreshold;
     defaultPlain = dftThreshold;
     stepCount    = 0;
-    auto* ParamThreshold = new Vst::RangeParameter(STR16("Threshold"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
+    auto* ParamThreshold = new LinRangeParameter(STR16("Threshold"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
     ParamThreshold->setPrecision(1);
     parameters.addParameter(ParamThreshold);
 
@@ -325,7 +426,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     maxPlain     = maxKnee;
     defaultPlain = dftKnee;
     stepCount    = 0;
-    auto* ParamKnee = new Vst::RangeParameter(STR16("Knee"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
+    auto* ParamKnee = new LinRangeParameter(STR16("Knee"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
     ParamKnee->setPrecision(1);
     parameters.addParameter(ParamKnee);
 
@@ -335,7 +436,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     maxPlain     = maxMakeup;
     defaultPlain = dftMakeup;
     stepCount    = 0;
-    auto* ParamMakeup = new Vst::RangeParameter(STR16("Makeup"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
+    auto* ParamMakeup = new LinRangeParameter(STR16("Makeup"), tag, STR16("dB"), minPlain, maxPlain, defaultPlain, stepCount, flags);
     ParamMakeup->setPrecision(1);
     parameters.addParameter(ParamMakeup);
 
@@ -345,7 +446,7 @@ tresult PLUGIN_API VLC_CompController::initialize (FUnknown* context)
     maxPlain     = maxMix;
     defaultPlain = dftMix;
     stepCount    = 0;
-    auto* ParamMix = new Vst::RangeParameter(STR16("Mix"), tag, STR16("%"), minPlain, maxPlain, defaultPlain, stepCount, flags);
+    auto* ParamMix = new LinRangeParameter(STR16("Mix"), tag, STR16("%"), minPlain, maxPlain, defaultPlain, stepCount, flags);
     ParamMix->setPrecision(1);
     parameters.addParameter(ParamMix);
 

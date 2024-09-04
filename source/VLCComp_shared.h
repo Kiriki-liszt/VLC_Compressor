@@ -67,7 +67,7 @@ static constexpr ParamValue dftAttack = 25.0;
 
 static constexpr ParamValue minRelease = 2.0;
 static constexpr ParamValue maxRelease = 800.0;
-static constexpr ParamValue dftRelease = 100.0;
+static constexpr ParamValue dftRelease = 200.0;
 
 static constexpr ParamValue minThreshold = -30.0;
 static constexpr ParamValue maxThreshold = 0.0;

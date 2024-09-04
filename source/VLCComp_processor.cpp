@@ -385,7 +385,7 @@ void VLC_CompProcessor::processAudio(
     int i_channels = numChannels;
 
     Vst::Sample64 f_rms_peak    = pRMS_PEAK;     /* RMS/peak */
-    Vst::Sample64 f_attack      = Norm2Plain(pAttack,    minAttack,    maxAttack);    /* Attack time (ms)     */
+    Vst::Sample64 f_attack      = LogNorm2Plain(pAttack,    minAttack,    maxAttack);    /* Attack time (ms)     */
     Vst::Sample64 f_release     = Norm2Plain(pRelease,   minRelease,   maxRelease);   /* Release time (ms)    */
     Vst::Sample64 f_threshold   = Norm2Plain(pThreshold, minThreshold, maxThreshold); /* Threshold level (dB) */
     Vst::Sample64 f_ratio       = Norm2Plain(pRatio,     minRatio,     maxRatio);     /* Ratio (n:1)          */
