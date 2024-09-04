@@ -8,7 +8,7 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 
 #include <cmath>
-#define decibelsToGain(f_db)  ((f_db>-80)?(std::pow(10.0, f_db / 20.0)):(0.0))
+#define decibelsToGain(f_db)  (std::pow(10.0, f_db / 20.0))
 #define gainToDecibels(f_lin) ((f_lin>0)?(20.0 * log10(f_lin)):(-80.0))
 
 namespace yg331 {
@@ -41,7 +41,7 @@ public:
     {
         sampleRate = fs;
 
-        double attackTimeInSeconds = 0.01 * DecayInSeconds;
+        double attackTimeInSeconds = 0.005 * DecayInSeconds;
         alphaAttack = exp(-1.0 / (sampleRate * attackTimeInSeconds));
 
         double releaseTimeInSeconds = DecayInSeconds;
@@ -98,7 +98,7 @@ public:
         if (channel >= state.size()) return 0.0;
 
         if (type == Peak) return decibelsToGain(state[channel]);
-        else return std::sqrt(decibelsToGain(state[channel]));
+        else return std::sqrt((decibelsToGain(state[channel]) > 0.0)?decibelsToGain(state[channel]):0.0 );
     }
 
 private:
@@ -193,6 +193,7 @@ protected:
     
     // VU metering ----------------------------------------------------------------
     LevelEnvelopeFollower VuInput, VuOutput;
+    Sample64 truePeakIn, truePeakOut;
 
     static SMTG_CONSTEXPR ParamValue init_meter = 0.0;
     ParamValue Meter = init_meter;

@@ -686,8 +686,10 @@ tresult PLUGIN_API VLC_CompController::notify(Vst::IMessage* message)
         int64 update = 0.0;
         if (message->getAttributes ()->getFloat ("vuInL",    data) == kResultTrue) vuInL    = data;
         if (message->getAttributes ()->getFloat ("vuInR",    data) == kResultTrue) vuInR    = data;
+        if (message->getAttributes ()->getFloat ("tpIn",     data) == kResultTrue) tpIn     = data;
         if (message->getAttributes ()->getFloat ("vuOutL",   data) == kResultTrue) vuOutL   = data;
         if (message->getAttributes ()->getFloat ("vuOutR",   data) == kResultTrue) vuOutR   = data;
+        if (message->getAttributes ()->getFloat ("tpOut",    data) == kResultTrue) tpOut    = data;
         if (message->getAttributes ()->getFloat ("vuGR",     data) == kResultTrue) vuGR     = data;
         if (message->getAttributes ()->getInt   ("update", update) == kResultTrue) {
             if (!vuMeterControllers.empty()) {

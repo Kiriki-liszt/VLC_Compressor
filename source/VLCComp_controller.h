@@ -333,10 +333,10 @@ public:
     Steinberg::Vst::ParamValue getVuMeterByTag(Steinberg::Vst::ParamID tag)
    {
        switch (tag) {
-           case kIn:     return 0.5*(vuInL+vuInR);    break;
+           case kIn:     return tpIn;    break;
            case kInL:    return vuInL;    break;
            case kInR:    return vuInR;    break;
-           case kOut:    return 0.5*(vuOutL+vuOutR);   break;
+           case kOut:    return tpOut;   break;
            case kOutL:   return vuOutL;   break;
            case kOutR:   return vuOutR;   break;
            case kGR:     return vuGR;     break;
@@ -378,6 +378,7 @@ protected:
     UIVuMeterControllerList vuMeterControllers;
     
     Steinberg::Vst::ParamValue vuInL = 0.0, vuInR = 0.0, vuOutL = 0.0, vuOutR = 0.0, vuGR = 0.0;
+    Steinberg::Vst::ParamValue tpIn = 0.0, tpOut = 0.0;
 };
 
 //------------------------------------------------------------------------

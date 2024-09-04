@@ -184,6 +184,8 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
         
         for (auto& loop : fInputVu) loop = Lin2Db(loop);
         for (auto& loop : fOutputVu) loop = Lin2Db(loop);
+        truePeakIn = Lin2Db(truePeakIn);
+        truePeakOut = Lin2Db(truePeakOut);
         fMeterVu = Lin2Db(fMeterVu);
     }
     
@@ -205,6 +207,13 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
     {
         message->setMessageID ("VUmeter");
+        double data = truePeakIn;
+        message->getAttributes ()->setFloat ("tpIn", data);
+        sendMessage (message);
+    }
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
         double data = (numChannels > 0) ? fOutputVu[0] : 0.0;
         message->getAttributes ()->setFloat ("vuOutL", data);
         sendMessage (message);
@@ -214,6 +223,14 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
         message->setMessageID ("VUmeter");
         double data = (numChannels > 1) ? fOutputVu[1] : ((numChannels > 0) ? fOutputVu[0] : 0.0);
         message->getAttributes ()->setFloat ("vuOutR", data);
+        sendMessage (message);
+    }
+    
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = truePeakOut;
+        message->getAttributes ()->setFloat ("tpOut", data);
         sendMessage (message);
     }
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
@@ -403,6 +420,8 @@ void VLC_CompProcessor::processAudio(
     //Vst::Sample64 f_ef_ai    = 1.0 - f_ef_a;
     
     Vst::Sample64 min_GR = 1.0;
+    truePeakIn = 0.0;
+    truePeakOut = 0.0;
 
     /* Process the current buffer */
     for( int i = 0; i < i_samples; i++ )
@@ -485,7 +504,7 @@ void VLC_CompProcessor::processAudio(
 
         /* Find the total gain */
         f_gain = f_gain * f_ef_a + f_gain_out * (1.0 - f_ef_a); //inertia to the gain change, with quater of attack
-        min_GR = (min_GR > f_gain) ? f_gain : min_GR;
+        if(min_GR > f_gain) min_GR = f_gain;
 
         /* Write the resulting buffer to the output */
         //BufferProcess( inputs, outputs, i_channels, f_gain, f_mug, p_la );
@@ -498,6 +517,9 @@ void VLC_CompProcessor::processAudio(
             outputs[i_chan][i] = p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * f_gain * f_mug;
             outputs[i_chan][i] = outputs[i_chan][i] * pMix + p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * (1.0 - pMix);
             outputs[i_chan][i] *= outputGain;
+            
+            if(truePeakIn < f_x) truePeakIn = f_x;
+            if(truePeakOut < outputs[i_chan][i]) truePeakOut = outputs[i_chan][i];
             VuInput.processSample(f_x, i_chan);
             VuOutput.processSample(outputs[i_chan][i], i_chan);
 
@@ -530,12 +552,12 @@ void VLC_CompProcessor::processAudio(
  *****************************************************************************/
 double VLC_CompProcessor::Db2Lin(double f_db)
 {
-    return (f_db>-80)?(std::pow(10.0, f_db / 20.0)):(0);
+    return std::pow(10.0, f_db / 20.0);
 }
 
 double VLC_CompProcessor::Lin2Db(double f_lin)
 {
-    return (f_lin>0)?(20.0 * std::log10(f_lin)):(-80);
+    return (f_lin>0.0)?(20.0 * std::log10(f_lin)):(-80.0);
 }
 /* Zero out denormals by adding and subtracting a small number, from Laurent de Soras */
 void VLC_CompProcessor::RoundToZero( Vst::ParamValue *pf_x )
