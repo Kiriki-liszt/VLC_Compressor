@@ -21,14 +21,14 @@ class MyVUMeterFactory : public ViewCreatorAdapter
 public:
     //register this class with the view factory
     MyVUMeterFactory() { UIViewFactory::registerViewCreator(*this); }
-
+    
     //return an unique name here
     IdStringPtr getViewName() const override { return "My Vu Meter"; }
-
+    
     //return the name here from where your custom view inherites.
     //    Your view automatically supports the attributes from it.
     IdStringPtr getBaseViewName() const override { return UIViewCreator::kCControl; }
-
+    
     //create your view here.
     //    Note you don't need to apply attributes here as
     //    the apply method will be called with this new view
@@ -38,26 +38,28 @@ public:
         return new MyVuMeter(size, 2);
     }
     
+    // apply custom attributes to your view
     bool apply(CView* view, const UIAttributes& attributes, const IUIDescription* description) const SMTG_OVERRIDE
     {
         auto* vuMeter = dynamic_cast<MyVuMeter*> (view);
-
+        
         if (!vuMeter)
             return false;
-
+        
         const auto* attr = attributes.getAttributeValue(UIViewCreator::kAttrOrientation);
         if (attr)
             vuMeter->setStyle(*attr == UIViewCreator::strVertical ? MyVuMeter::kVertical : MyVuMeter::kHorizontal);
-
+        
         CColor color;
         if (UIViewCreator::stringToColor(attributes.getAttributeValue(kAttrVuOnColor), color, description))
             vuMeter->setVuOnColor(color);
         if (UIViewCreator::stringToColor(attributes.getAttributeValue(kAttrVuOffColor), color, description))
             vuMeter->setVuOffColor(color);
-
+        
         return true;
     }
-
+    
+    // add your custom attributes to the list
     bool getAttributeNames(StringList& attributeNames) const SMTG_OVERRIDE
     {
         attributeNames.emplace_back(UIViewCreator::kAttrOrientation);
@@ -65,7 +67,8 @@ public:
         attributeNames.emplace_back(kAttrVuOffColor);
         return true;
     }
-
+    
+    // return the type of your custom attributes
     AttrType getAttributeType(const std::string& attributeName) const SMTG_OVERRIDE
     {
         if (attributeName == UIViewCreator::kAttrOrientation)
@@ -76,19 +79,19 @@ public:
             return kColorType;
         return kUnknownType;
     }
-
-    //------------------------------------------------------------------------
+    
+    // return the string value of the custom attributes of the view
     bool getAttributeValue(
-        CView* view,
-        const string& attributeName,
-        string& stringValue,
-        const IUIDescription* desc) const SMTG_OVERRIDE
+                           CView* view,
+                           const string& attributeName,
+                           string& stringValue,
+                           const IUIDescription* desc) const SMTG_OVERRIDE
     {
         auto* vuMeter = dynamic_cast<MyVuMeter*> (view);
-
+        
         if (!vuMeter)
             return false;
-
+        
         if (attributeName == UIViewCreator::kAttrOrientation)
         {
             if (vuMeter->getStyle() & MyVuMeter::kVertical)
@@ -109,11 +112,11 @@ public:
         }
         return false;
     }
-
+    
     //------------------------------------------------------------------------
     bool getPossibleListValues(
-        const string& attributeName,
-        ConstStringPtrList& values) const SMTG_OVERRIDE
+                               const string& attributeName,
+                               ConstStringPtrList& values) const SMTG_OVERRIDE
     {
         if (attributeName == UIViewCreator::kAttrOrientation)
         {
@@ -121,11 +124,25 @@ public:
         }
         return false;
     }
-
 };
+
+class PDisplayFactory : public ViewCreatorAdapter
+    {
+    public:
+        PDisplayFactory() { UIViewFactory::registerViewCreator(*this); }
+        IdStringPtr getViewName() const override { return "PDisplay"; }
+        IdStringPtr getBaseViewName() const override { return UIViewCreator::kCParamDisplay; }
+        CView* create(const UIAttributes& attributes, const IUIDescription* description) const override
+        {
+            CRect ss(0, 0, 100, 20);
+            return new PDisplay(ss, nullptr, 0);
+        }
+        
+    };
 
 //create a static instance so that it registers itself with the view factory
 MyVUMeterFactory __gMyVUMeterFactory;
+PDisplayFactory __gPDisplayFactory;
 
 } // namespace VSTGUI
 
@@ -144,20 +161,16 @@ template<> void VLC_CompController::UIVuMeterController::updateVuMeterValue()
         if (vuMeterOutL) vuMeterOutL->setValue(mainController->getVuMeterByTag(kOutL));
         if (vuMeterOutR) vuMeterOutR->setValue(mainController->getVuMeterByTag(kOutR));
         if (vuMeterGR)   vuMeterGR->  setValue(mainController->getVuMeterByTag(kGR));
-        
-        if (inMeter)  inMeter-> invalid();
-        if (outMeter) outMeter->invalid();
-        if (grMeter)  grMeter-> invalid();
     }
 }
 
 template<> VSTGUI::CView* VLC_CompController::UIVuMeterController::verifyView(
                                             VSTGUI::CView* view,
-                                            const VSTGUI::UIAttributes&   /*attributes*/,
+                                            const VSTGUI::UIAttributes&   attributes,
                                             const VSTGUI::IUIDescription* /*description*/
 )
 {
-    if (CParamDisplay* control = dynamic_cast<CParamDisplay*>(view); control)
+    if (PDisplay* control = dynamic_cast<PDisplay*>(view); control)
     {
         if (control->getTag() == kIn) {
             inMeter = control;
@@ -189,9 +202,9 @@ template<> VSTGUI::CView* VLC_CompController::UIVuMeterController::verifyView(
 
 template<> void VLC_CompController::UIVuMeterController::viewWillDelete(VSTGUI::CView* view)
 {
-    if (dynamic_cast<CParamDisplay*>(view) == inMeter  && inMeter)    { inMeter-> unregisterViewListener(this); inMeter  = nullptr; }
-    if (dynamic_cast<CParamDisplay*>(view) == outMeter && outMeter)   { outMeter->unregisterViewListener(this); outMeter = nullptr; }
-    if (dynamic_cast<CParamDisplay*>(view) == grMeter  && grMeter)    { grMeter-> unregisterViewListener(this); grMeter  = nullptr; }
+    if (dynamic_cast<PDisplay*>(view) == inMeter  && inMeter)    { inMeter-> unregisterViewListener(this); inMeter  = nullptr; }
+    if (dynamic_cast<PDisplay*>(view) == outMeter && outMeter)   { outMeter->unregisterViewListener(this); outMeter = nullptr; }
+    if (dynamic_cast<PDisplay*>(view) == grMeter  && grMeter)    { grMeter-> unregisterViewListener(this); grMeter  = nullptr; }
     
     if (dynamic_cast<MyVuMeter*>(view) == vuMeterInL  && vuMeterInL)  { vuMeterInL-> unregisterViewListener(this); vuMeterInL  = nullptr; }
     if (dynamic_cast<MyVuMeter*>(view) == vuMeterInR  && vuMeterInR)  { vuMeterInR-> unregisterViewListener(this); vuMeterInR  = nullptr; }

@@ -384,11 +384,11 @@
 													"wheel-inc-value": "0.1"
 												}
 											},
-											"CParamDisplay": {
+											"PDisplay": {
 												"attributes": {
 													"back-color": "~ BlackCColor",
 													"background-offset": "0, 0",
-													"class": "CParamDisplay",
+													"class": "PDisplay",
 													"control-tag": "In_Meter",
 													"default-value": "0.5",
 													"font": "~ NormalFont",
@@ -532,11 +532,11 @@
 													"wheel-inc-value": "0.1"
 												}
 											},
-											"CParamDisplay": {
+											"PDisplay": {
 												"attributes": {
 													"back-color": "~ BlackCColor",
 													"background-offset": "0, 0",
-													"class": "CParamDisplay",
+													"class": "PDisplay",
 													"control-tag": "Gain_Reduction",
 													"default-value": "0.5",
 													"font": "~ NormalFont",
@@ -661,11 +661,11 @@
 													"wheel-inc-value": "0.1"
 												}
 											},
-											"CParamDisplay": {
+											"PDisplay": {
 												"attributes": {
 													"back-color": "~ BlackCColor",
 													"background-offset": "0, 0",
-													"class": "CParamDisplay",
+													"class": "PDisplay",
 													"control-tag": "Out_Meter",
 													"default-value": "0.5",
 													"font": "~ NormalFont",
@@ -927,7 +927,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "-12.3",
+													"title": "-11.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -1242,7 +1242,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "20.0",
+													"title": "4.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",
@@ -1557,7 +1557,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "1.0",
+													"title": "5.0",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",

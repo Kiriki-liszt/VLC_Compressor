@@ -9,6 +9,18 @@
 #include "vstgui/plugin-bindings/vst3editor.h"
 
 namespace VSTGUI {
+class PDisplay : public CParamDisplay {
+public:
+    PDisplay (const CRect& size, CBitmap* background = nullptr, int32_t style = 0)
+        : CParamDisplay(size, background, style)
+    {setWantsIdle(true);};
+    PDisplay (const CParamDisplay& paramDisplay)
+        : CParamDisplay(paramDisplay)
+    {setWantsIdle(true);};
+    void onIdle() override {
+        invalid();
+    };
+};
 //------------------------------------------------------------------------
 //  VU meter view
 //------------------------------------------------------------------------
@@ -187,7 +199,7 @@ public:
 private:
     using CControl       = VSTGUI::CControl;
     using CView          = VSTGUI::CView;
-    using CParamDisplay  = VSTGUI::CParamDisplay;
+    using PDisplay        = VSTGUI::PDisplay;
     using MyVuMeter      = VSTGUI::MyVuMeter;
     using UTF8String     = VSTGUI::UTF8String;
     using UIAttributes   = VSTGUI::UIAttributes;
@@ -206,9 +218,9 @@ private:
     void viewWillDelete(CView* view) SMTG_OVERRIDE;
 
     ControllerType* mainController;
-    CParamDisplay* inMeter;
-    CParamDisplay* outMeter;
-    CParamDisplay* grMeter;
+    PDisplay* inMeter;
+    PDisplay* outMeter;
+    PDisplay* grMeter;
     MyVuMeter* vuMeterInL;
     MyVuMeter* vuMeterInR;
     MyVuMeter* vuMeterOutL;

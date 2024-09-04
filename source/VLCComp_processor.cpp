@@ -181,7 +181,7 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
                 processAudio<Vst::Sample64>((Vst::Sample64**)in, (Vst::Sample64**)out, numChannels, SampleRate, data.numSamples);
             }
         }
-
+        
         for (auto& loop : fInputVu) loop = Lin2Db(loop);
         for (auto& loop : fOutputVu) loop = Lin2Db(loop);
         fMeterVu = Lin2Db(fMeterVu);
@@ -498,6 +498,8 @@ void VLC_CompProcessor::processAudio(
             outputs[i_chan][i] = p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * f_gain * f_mug;
             outputs[i_chan][i] = outputs[i_chan][i] * pMix + p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * (1.0 - pMix);
             outputs[i_chan][i] *= outputGain;
+            VuInput.processSample(f_x, i_chan);
+            VuOutput.processSample(outputs[i_chan][i], i_chan);
 
             buff[i_chan].at(i) = p_la.p_buf[p_la.i_pos].pf_vals[i_chan];
 
@@ -508,11 +510,12 @@ void VLC_CompProcessor::processAudio(
         /* Go to the next delayed buffer value for the next run */
         p_la.i_pos = ( p_la.i_pos + 1 ) % ( p_la.i_count );
     }
-    
+    fMeterVu = min_GR;
+    /*
     VuInput.update(buff_head.data(), numChannels, sampleFrames);
     VuOutput.update<SampleType>(outputs, numChannels, sampleFrames);
     fMeterVu = min_GR;
-
+    */
     for (int ch = 0; ch < numChannels; ch++)
     {
         fInputVu[ch]  = VuInput.getEnv(ch);

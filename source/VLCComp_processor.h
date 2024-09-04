@@ -8,7 +8,7 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 
 #include <cmath>
-#define decibelsToGain(f_db)  ((f_db>-80)?(std::pow(10.0, f_db * 0.05)):(0))
+#define decibelsToGain(f_db)  ((f_db>-80)?(std::pow(10.0, f_db / 20.0)):(0.0))
 #define gainToDecibels(f_lin) ((f_lin>0)?(20.0 * log10(f_lin)):(-80.0))
 
 namespace yg331 {
@@ -73,6 +73,23 @@ public:
                 }
                 
             }
+        }
+    }
+    
+    void processSample(double inputSample, int channel)
+    {
+        if (channel < 0) return;
+
+        if (type == Peak) {
+            double in = gainToDecibels(std::abs(inputSample));
+            if (in > state[channel])
+                state[channel] = alphaAttack * state[channel] + (1.0 - alphaAttack) * in;
+            else
+                state[channel] = alphaRelease * state[channel] + (1.0 - alphaRelease) * in;
+        }
+        else {
+            double pwr = gainToDecibels(std::abs(inputSample) * std::abs(inputSample));
+            state[channel] = alphaRelease * state[channel] + (1.0 - alphaRelease) * pwr;
         }
     }
     
