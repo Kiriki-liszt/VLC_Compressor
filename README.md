@@ -7,7 +7,7 @@ Port of VLC Compressor, a dynamic range compressor ported from plugins from LADS
 
 [![Static Badge](https://img.shields.io/badge/coffee%20maybe%3F%20%3D%5D%20-gray?style=for-the-badge&logo=buy-me-a-coffee)](https://buymeacoffee.com/kirikiaris)
 
-<img src="https://github.com/Kiriki-liszt/VLC_Compressor/raw/main/screenshots/screenshot.png"  width="600"/>  
+<img src="https://github.com/Kiriki-liszt/VLC_Compressor/raw/main/screenshot.png"  width="600"/>  
 
 
 ### Compatibility  
