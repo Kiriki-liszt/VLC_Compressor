@@ -8,37 +8,10 @@
 #include "public.sdk/source/vst/vstaudioeffect.h"
 
 #include <cmath>
+#define decibelsToGain(f_db)  ((f_db>-80)?(std::pow(10.0, f_db * 0.05)):(0))
+#define gainToDecibels(f_lin) ((f_lin>0)?(20.0 * log10(f_lin)):(-80.0))
 
 namespace yg331 {
-class Decibels
-{
-public:
-    template <typename Type>
-    static Type decibelsToGain(
-        Type decibels,
-        Type minusInfinityDb = Type(defaultMinusInfinitydB)
-    )
-    {
-        return decibels > minusInfinityDb
-                        ? std::pow(Type(10.0), decibels * Type(0.05))
-                        : Type();
-    }
-
-    template <typename Type>
-    static Type gainToDecibels(
-        Type gain,
-        Type minusInfinityDb = Type(defaultMinusInfinitydB)
-    )
-    {
-        return gain > Type()
-                    ? (std::max)(minusInfinityDb, static_cast<Type> (std::log10(gain)) * Type(20.0))
-                    : minusInfinityDb;
-    }
-
-private:
-    enum { defaultMinusInfinitydB = -100 };
-    Decibels() = delete;
-};
 class LevelEnvelopeFollower
 {
 public:
@@ -75,7 +48,7 @@ public:
         alphaRelease = exp(-1.0 / (sampleRate * releaseTimeInSeconds));
 
         for (auto& s : state)
-            s = Decibels::gainToDecibels(0.0);
+            s = gainToDecibels(0.0);
     }
 
     template <typename SampleType>
@@ -88,14 +61,14 @@ public:
         for (int ch = 0; ch < numChannels; ch++) {
             for (int i = 0; i < numSamples; i++) {
                 if (type == Peak) {
-                    double in = Decibels::gainToDecibels(std::abs(channelData[ch][i]));
+                    double in = gainToDecibels(std::abs(channelData[ch][i]));
                     if (in > state[ch])
                         state[ch] = alphaAttack * state[ch] + (1.0 - alphaAttack) * in;
                     else
                         state[ch] = alphaRelease * state[ch] + (1.0 - alphaRelease) * in;
                 }
                 else {
-                    double pwr = Decibels::gainToDecibels(std::abs(channelData[ch][i]) * std::abs(channelData[ch][i]));
+                    double pwr = gainToDecibels(std::abs(channelData[ch][i]) * std::abs(channelData[ch][i]));
                     state[ch] = alphaRelease * state[ch] + (1.0 - alphaRelease) * pwr;
                 }
                 
@@ -107,8 +80,8 @@ public:
         if (channel < 0) return 0.0;
         if (channel >= state.size()) return 0.0;
 
-        if (type == Peak) return Decibels::decibelsToGain(state[channel]);
-        else return std::sqrt(Decibels::decibelsToGain(state[channel]));
+        if (type == Peak) return decibelsToGain(state[channel]);
+        else return std::sqrt(decibelsToGain(state[channel]));
     }
 
 private:

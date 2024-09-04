@@ -12,7 +12,7 @@ using ParamValue = Steinberg::Vst::ParamValue;
 using int32      = Steinberg::int32;
 using uint32     = Steinberg::uint32;
 
-#define RMS_BUF_SIZE    (960)
+#define RMS_BUF_SIZE    (1920)
 #define LOOKAHEAD_SIZE  ((RMS_BUF_SIZE)<<1)
 #define AOUT_CHAN_MAX   9
 

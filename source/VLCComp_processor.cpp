@@ -140,7 +140,7 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
     // init VuMeters
     for (auto& loop : fInputVu) loop = init_meter;
     for (auto& loop : fOutputVu) loop = init_meter;
-    fMeterVu = init_meter;
+    fMeterVu = 1.0;
 
     //---check if silence---------------
     // check if all channel are silent then process silent
@@ -229,7 +229,7 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
         message->getAttributes ()->setInt ("update", true);
         sendMessage (message);
     }
-
+    // FDebugPrint("fOutputVu[0] = %f\n", fOutputVu[0]);
     return kResultOk;
 }
 
@@ -527,12 +527,12 @@ void VLC_CompProcessor::processAudio(
  *****************************************************************************/
 double VLC_CompProcessor::Db2Lin(double f_db)
 {
-    return std::pow(10.0, f_db / 20.0);
+    return (f_db>-80)?(std::pow(10.0, f_db / 20.0)):(0);
 }
 
 double VLC_CompProcessor::Lin2Db(double f_lin)
 {
-    return 20.0 * log10(f_lin);
+    return (f_lin>0)?(20.0 * std::log10(f_lin)):(-80);
 }
 /* Zero out denormals by adding and subtracting a small number, from Laurent de Soras */
 void VLC_CompProcessor::RoundToZero( Vst::ParamValue *pf_x )

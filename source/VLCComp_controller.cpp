@@ -13,7 +13,7 @@
 
 using namespace Steinberg;
 
-static const std::string kAttrVuOnColor = "vu-on-color";
+static const std::string kAttrVuOnColor  = "vu-on-color";
 static const std::string kAttrVuOffColor = "vu-off-color";
 namespace VSTGUI {
 class MyVUMeterFactory : public ViewCreatorAdapter
@@ -37,10 +37,8 @@ public:
         CRect size(CPoint(45, 45), CPoint(400, 150));
         return new MyVuMeter(size, 2);
     }
-    bool apply(
-        CView* view,
-        const UIAttributes& attributes,
-        const IUIDescription* description) const
+    
+    bool apply(CView* view, const UIAttributes& attributes, const IUIDescription* description) const SMTG_OVERRIDE
     {
         auto* vuMeter = dynamic_cast<MyVuMeter*> (view);
 
@@ -60,7 +58,7 @@ public:
         return true;
     }
 
-    bool getAttributeNames(StringList& attributeNames) const
+    bool getAttributeNames(StringList& attributeNames) const SMTG_OVERRIDE
     {
         attributeNames.emplace_back(UIViewCreator::kAttrOrientation);
         attributeNames.emplace_back(kAttrVuOnColor);
@@ -68,7 +66,7 @@ public:
         return true;
     }
 
-    AttrType getAttributeType(const std::string& attributeName) const
+    AttrType getAttributeType(const std::string& attributeName) const SMTG_OVERRIDE
     {
         if (attributeName == UIViewCreator::kAttrOrientation)
             return kListType;
@@ -84,7 +82,7 @@ public:
         CView* view,
         const string& attributeName,
         string& stringValue,
-        const IUIDescription* desc) const
+        const IUIDescription* desc) const SMTG_OVERRIDE
     {
         auto* vuMeter = dynamic_cast<MyVuMeter*> (view);
 
@@ -115,7 +113,7 @@ public:
     //------------------------------------------------------------------------
     bool getPossibleListValues(
         const string& attributeName,
-        ConstStringPtrList& values) const
+        ConstStringPtrList& values) const SMTG_OVERRIDE
     {
         if (attributeName == UIViewCreator::kAttrOrientation)
         {
@@ -128,6 +126,7 @@ public:
 
 //create a static instance so that it registers itself with the view factory
 MyVUMeterFactory __gMyVUMeterFactory;
+
 } // namespace VSTGUI
 
 namespace yg331 {
@@ -137,18 +136,18 @@ namespace yg331 {
 template<> void VLC_CompController::UIVuMeterController::updateVuMeterValue()
 {
     if (mainController) {
-        if (inMeter)          inMeter->      setValue(mainController->getVuMeterByTag(kIn));
-        if (outMeter)         outMeter->     setValue(mainController->getVuMeterByTag(kOut));
-        if (grMeter)          grMeter->      setValue(mainController->getVuMeterByTag(kGR));
-        if (vuMeterInL)       vuMeterInL->   setValue(mainController->getVuMeterByTag(kInL));
-        if (vuMeterInR)       vuMeterInR->   setValue(mainController->getVuMeterByTag(kInR));
-        if (vuMeterOutL)      vuMeterOutL->  setValue(mainController->getVuMeterByTag(kOutL));
-        if (vuMeterOutR)      vuMeterOutR->  setValue(mainController->getVuMeterByTag(kOutR));
-        if (vuMeterGR)        vuMeterGR->    setValue(mainController->getVuMeterByTag(kGR));
+        if (inMeter)     inMeter->    setValue(mainController->getVuMeterByTag(kIn));
+        if (outMeter)    outMeter->   setValue(mainController->getVuMeterByTag(kOut));
+        if (grMeter)     grMeter->    setValue(mainController->getVuMeterByTag(kGR));
+        if (vuMeterInL)  vuMeterInL-> setValue(mainController->getVuMeterByTag(kInL));
+        if (vuMeterInR)  vuMeterInR-> setValue(mainController->getVuMeterByTag(kInR));
+        if (vuMeterOutL) vuMeterOutL->setValue(mainController->getVuMeterByTag(kOutL));
+        if (vuMeterOutR) vuMeterOutR->setValue(mainController->getVuMeterByTag(kOutR));
+        if (vuMeterGR)   vuMeterGR->  setValue(mainController->getVuMeterByTag(kGR));
         
-        if (inMeter)  inMeter->invalid();
+        if (inMeter)  inMeter-> invalid();
         if (outMeter) outMeter->invalid();
-        if (grMeter)  grMeter->invalid();
+        if (grMeter)  grMeter-> invalid();
     }
 }
 
@@ -178,31 +177,11 @@ template<> VSTGUI::CView* VLC_CompController::UIVuMeterController::verifyView(
     }
 
     if (MyVuMeter* control = dynamic_cast<MyVuMeter*>(view); control) {
-        if (control->getTag() == kInL) {
-            vuMeterInL = control;
-            vuMeterInL->registerViewListener(this);
-            ///vuMeterInL->setValue(0.0);
-        }
-        if (control->getTag() == kInR) {
-            vuMeterInR = control;
-            vuMeterInR->registerViewListener(this);
-            //vuMeterInR->setValue(0.0);
-        }
-        if (control->getTag() == kOutL) {
-            vuMeterOutL = control;
-            vuMeterOutL->registerViewListener(this);
-            //vuMeterOutL->setValue(0.0);
-        }
-        if (control->getTag() == kOutR) {
-            vuMeterOutR = control;
-            vuMeterOutR->registerViewListener(this);
-            //vuMeterOutR->setValue(0.0);
-        }
-        if (control->getTag() == kGR) {
-            vuMeterGR = control;
-            vuMeterGR->registerViewListener(this);
-            //vuMeterGR->setValue(0.0);
-        }
+        if (control->getTag() == kInL)  { vuMeterInL  = control; vuMeterInL-> registerViewListener(this); }
+        if (control->getTag() == kInR)  { vuMeterInR  = control; vuMeterInR-> registerViewListener(this); }
+        if (control->getTag() == kOutL) { vuMeterOutL = control; vuMeterOutL->registerViewListener(this); }
+        if (control->getTag() == kOutR) { vuMeterOutR = control; vuMeterOutR->registerViewListener(this); }
+        if (control->getTag() == kGR)   { vuMeterGR   = control; vuMeterGR->  registerViewListener(this); }
     }
 
     return view;
@@ -210,47 +189,15 @@ template<> VSTGUI::CView* VLC_CompController::UIVuMeterController::verifyView(
 
 template<> void VLC_CompController::UIVuMeterController::viewWillDelete(VSTGUI::CView* view)
 {
-    if (dynamic_cast<CParamDisplay*> (view) == inMeter && inMeter)
-    {
-        inMeter->unregisterViewListener(this);
-        inMeter = nullptr;
-    }
-    if (dynamic_cast<CParamDisplay*> (view) == outMeter && outMeter)
-    {
-        outMeter->unregisterViewListener(this);
-        outMeter = nullptr;
-    }
-    if (dynamic_cast<CParamDisplay*> (view) == grMeter && grMeter)
-    {
-        grMeter->unregisterViewListener(this);
-        grMeter = nullptr;
-    }
+    if (dynamic_cast<CParamDisplay*>(view) == inMeter  && inMeter)    { inMeter-> unregisterViewListener(this); inMeter  = nullptr; }
+    if (dynamic_cast<CParamDisplay*>(view) == outMeter && outMeter)   { outMeter->unregisterViewListener(this); outMeter = nullptr; }
+    if (dynamic_cast<CParamDisplay*>(view) == grMeter  && grMeter)    { grMeter-> unregisterViewListener(this); grMeter  = nullptr; }
     
-    if (dynamic_cast<MyVuMeter*>(view) == vuMeterInL && vuMeterInL)
-    {
-        vuMeterInL->unregisterViewListener(this);
-        vuMeterInL = nullptr;
-    }
-    if (dynamic_cast<MyVuMeter*>(view) == vuMeterInR && vuMeterInR)
-    {
-        vuMeterInR->unregisterViewListener(this);
-        vuMeterInR = nullptr;
-    }
-    if (dynamic_cast<MyVuMeter*>(view) == vuMeterOutL && vuMeterOutL)
-    {
-        vuMeterOutL->unregisterViewListener(this);
-        vuMeterOutL = nullptr;
-    }
-    if (dynamic_cast<MyVuMeter*>(view) == vuMeterOutR && vuMeterOutR)
-    {
-        vuMeterOutR->unregisterViewListener(this);
-        vuMeterOutR = nullptr;
-    }
-    if (dynamic_cast<MyVuMeter*>(view) == vuMeterGR && vuMeterGR)
-    {
-        vuMeterGR->unregisterViewListener(this);
-        vuMeterGR = nullptr;
-    }
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterInL  && vuMeterInL)  { vuMeterInL-> unregisterViewListener(this); vuMeterInL  = nullptr; }
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterInR  && vuMeterInR)  { vuMeterInR-> unregisterViewListener(this); vuMeterInR  = nullptr; }
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterOutL && vuMeterOutL) { vuMeterOutL->unregisterViewListener(this); vuMeterOutL = nullptr; }
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterOutR && vuMeterOutR) { vuMeterOutR->unregisterViewListener(this); vuMeterOutR = nullptr; }
+    if (dynamic_cast<MyVuMeter*>(view) == vuMeterGR   && vuMeterGR)   { vuMeterGR->  unregisterViewListener(this); vuMeterGR   = nullptr; }
 }
 //------------------------------------------------------------------------
 // VLC_CompController Implementation
@@ -424,6 +371,11 @@ tresult PLUGIN_API VLC_CompController::terminate ()
 {
 	// Here the Plug-in will be de-instantiated, last possibility to remove some memory!
     getParameterObject(kParamZoom)->removeDependent(this);
+    editors.clear();
+    editors.shrink_to_fit();
+    vuMeterControllers.clear();
+    vuMeterControllers.shrink_to_fit();
+    
 	//---do not forget to call parent ------
 	return EditControllerEx1::terminate ();
 }
@@ -467,20 +419,20 @@ tresult PLUGIN_API VLC_CompController::setComponentState (IBStream* state)
     if (streamer.readDouble(savedMix)        == false) return kResultFalse;
     if (streamer.readDouble(savedSoftBypass) == false) return kResultFalse;
 
-    setParamNormalized(kParamBypass, savedBypass ? 1 : 0);
-    setParamNormalized(kParamZoom,   savedZoom);
-    setParamNormalized(kParamOS,     savedOS);
-    setParamNormalized(kParamInput,  savedInput);
-    setParamNormalized(kParamOutput,  savedOutput);
-    setParamNormalized(kParamRMS_PEAK,  savedRMS_PEAK);
-    setParamNormalized(kParamAttack,  savedAttack);
-    setParamNormalized(kParamRelease,  savedRelease);
+    setParamNormalized(kParamBypass,     savedBypass ? 1 : 0);
+    setParamNormalized(kParamZoom,       savedZoom);
+    setParamNormalized(kParamOS,         savedOS);
+    setParamNormalized(kParamInput,      savedInput);
+    setParamNormalized(kParamOutput,     savedOutput);
+    setParamNormalized(kParamRMS_PEAK,   savedRMS_PEAK);
+    setParamNormalized(kParamAttack,     savedAttack);
+    setParamNormalized(kParamRelease,    savedRelease);
     setParamNormalized(kParamThreshold,  savedThreshold);
-    setParamNormalized(kParamRatio,  savedRatio);
-    setParamNormalized(kParamKnee,  savedKnee);
-    setParamNormalized(kParamMakeup,  savedMakeup);
-    setParamNormalized(kParamMix,  savedMix);
-    setParamNormalized(kParamSoftBypass,  savedSoftBypass);
+    setParamNormalized(kParamRatio,      savedRatio);
+    setParamNormalized(kParamKnee,       savedKnee);
+    setParamNormalized(kParamMakeup,     savedMakeup);
+    setParamNormalized(kParamMix,        savedMix);
+    setParamNormalized(kParamSoftBypass, savedSoftBypass);
 
 	return kResultOk;
 }
@@ -632,7 +584,6 @@ tresult PLUGIN_API VLC_CompController::notify(Vst::IMessage* message)
         }
         return kResultOk;
     }
-
     return EditControllerEx1::notify(message);
 }
 

@@ -13,6 +13,7 @@ static const Steinberg::FUID kVLC_CompProcessorUID (0x3101A44E, 0xE92E5D4E, 0x93
 static const Steinberg::FUID kVLC_CompControllerUID (0xB675CF13, 0x9A1E5AAC, 0x9989ADBB, 0x6B588482);
 
 #define VLC_CompVST3Category "Fx|Dynamics"
+
 enum {
     kParamBypass = 0,
     kParamZoom,
