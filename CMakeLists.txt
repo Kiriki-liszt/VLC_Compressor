@@ -15,8 +15,8 @@ project(VLC_Compressor
     # This is your plug-in version number. Change it here only.
     # Version number symbols usable in C++ can be found in
     # source/version.h and ${PROJECT_BINARY_DIR}/projectversion.h.
-    VERSION 0.0.1.0 
-    DESCRIPTION "VLC_Compressor VST 3 Plug-in"
+    VERSION 1.0.0.0
+    DESCRIPTION "VLC Compressor VST 3 Plug-in"
 )
 
 set(SMTG_VSTGUI_ROOT "${vst3sdk_SOURCE_DIR}")
