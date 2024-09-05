@@ -16,6 +16,9 @@ using namespace Steinberg;
 
 static const std::string kAttrVuOnColor  = "vu-on-color";
 static const std::string kAttrVuOffColor = "vu-off-color";
+static const std::string kAttrPDclick    = "click-behave";
+static const std::string kAttrPDMin      = "update-min";
+static const std::string kAttrPDMax      = "update-max";
 namespace VSTGUI {
 class MyVUMeterFactory : public ViewCreatorAdapter
 {
@@ -128,23 +131,102 @@ public:
 };
 
 class PDisplayFactory : public ViewCreatorAdapter
+{
+public:
+    PDisplayFactory() { UIViewFactory::registerViewCreator(*this); }
+    IdStringPtr getViewName() const override { return "PDisplay"; }
+    IdStringPtr getBaseViewName() const override { return UIViewCreator::kCParamDisplay; }
+    CView* create(const UIAttributes& attributes, const IUIDescription* description) const override
     {
-    public:
-        PDisplayFactory() { UIViewFactory::registerViewCreator(*this); }
-        IdStringPtr getViewName() const override { return "PDisplay"; }
-        IdStringPtr getBaseViewName() const override { return UIViewCreator::kCParamDisplay; }
-        CView* create(const UIAttributes& attributes, const IUIDescription* description) const override
+        CRect ss(0, 0, 100, 20);
+        return new PDisplay(ss, nullptr, 0);
+    }
+    bool apply(
+        CView* view,
+        const UIAttributes& attributes,
+        const IUIDescription* description) const SMTG_OVERRIDE
+    {
+        auto* vv = dynamic_cast<PDisplay*> (view);
+
+        if (!vv)
+            return false;
+
+        const auto* attr = attributes.getAttributeValue(kAttrPDclick);
+        if (attr)
+            vv->setStyle_(*attr == kAttrPDMin ? PDisplay::kUpdateMin : PDisplay::kUpdateMax);
+
+        return true;
+    }
+
+    bool getAttributeNames(StringList& attributeNames) const SMTG_OVERRIDE
+    {
+        attributeNames.emplace_back(kAttrPDclick);
+        return true;
+    }
+
+    AttrType getAttributeType(const std::string& attributeName) const SMTG_OVERRIDE
+    {
+        if (attributeName == kAttrPDclick)
+            return kListType;
+        return kUnknownType;
+    }
+
+    //------------------------------------------------------------------------
+    bool getAttributeValue(
+        CView* view,
+        const string& attributeName,
+        string& stringValue,
+        const IUIDescription* desc) const SMTG_OVERRIDE
+    {
+        auto* vv = dynamic_cast<PDisplay*> (view);
+
+        if (!vv)
+            return false;
+
+        if (attributeName == kAttrPDclick)
         {
-            CRect ss(0, 0, 100, 20);
-            return new PDisplay(ss, nullptr, 0);
+            if (vv->getStyle_() & PDisplay::kUpdateMin)
+                stringValue = kAttrPDMin;
+            else
+                stringValue = kAttrPDMax;
+            return true;
         }
-        
-    };
+
+        return false;
+    }
+
+    //------------------------------------------------------------------------
+    bool getPossibleListValues(
+        const string& attributeName,
+        ConstStringPtrList& values) const SMTG_OVERRIDE
+    {
+        if (attributeName == kAttrPDclick)
+        {
+            values.emplace_back(&kAttrPDMin);
+            values.emplace_back(&kAttrPDMax);
+            return true;
+        }
+        return false;
+    }
+};
+
+class MeterViewContainerFactory : public ViewCreatorAdapter
+{
+public:
+    MeterViewContainerFactory() { UIViewFactory::registerViewCreator(*this); }
+    IdStringPtr getViewName() const override { return "MeterViewContainer"; }
+    IdStringPtr getBaseViewName() const override { return UIViewCreator::kCViewContainer; }
+    CView* create(const UIAttributes& attributes, const IUIDescription* description) const override
+    {
+        CRect ss(0, 0, 100, 20);
+        return new MeterViewContainer(ss);
+    }
+};
 
 //create a static instance so that it registers itself with the view factory
-MyVUMeterFactory __gMyVUMeterFactory;
-PDisplayFactory __gPDisplayFactory;
-
+MyVUMeterFactory          __gMyVUMeterFactory;
+PDisplayFactory           __gPDisplayFactory;
+MeterViewContainerFactory __gMeterViewContainerFactory;
 } // namespace VSTGUI
 
 namespace yg331 {
@@ -157,10 +239,10 @@ template<> void VLC_CompController::UIVuMeterController::updateVuMeterValue()
         if (inMeter)     inMeter->    setValue(mainController->getVuMeterByTag(kIn));
         if (outMeter)    outMeter->   setValue(mainController->getVuMeterByTag(kOut));
         if (grMeter)     grMeter->    setValue(mainController->getVuMeterByTag(kGR));
-        if (vuMeterInL)  vuMeterInL-> setValue(mainController->getVuMeterByTag(kInL));
-        if (vuMeterInR)  vuMeterInR-> setValue(mainController->getVuMeterByTag(kInR));
-        if (vuMeterOutL) vuMeterOutL->setValue(mainController->getVuMeterByTag(kOutL));
-        if (vuMeterOutR) vuMeterOutR->setValue(mainController->getVuMeterByTag(kOutR));
+        if (vuMeterInL)  vuMeterInL-> setValue(mainController->getVuMeterByTag(vuMeterInL->getTag()));
+        if (vuMeterInR)  vuMeterInR-> setValue(mainController->getVuMeterByTag(vuMeterInR->getTag()));
+        if (vuMeterOutL) vuMeterOutL->setValue(mainController->getVuMeterByTag(vuMeterOutL->getTag()));
+        if (vuMeterOutR) vuMeterOutR->setValue(mainController->getVuMeterByTag(vuMeterOutR->getTag()));
         if (vuMeterGR)   vuMeterGR->  setValue(mainController->getVuMeterByTag(kGR));
     }
 }
@@ -176,26 +258,69 @@ template<> VSTGUI::CView* VLC_CompController::UIVuMeterController::verifyView(
         if (control->getTag() == kIn) {
             inMeter = control;
             inMeter->registerViewListener(this);
-            inMeter->CParamDisplay::setValue(inMeter->getDefaultValue());
+            inMeter->setMin(-80.0);
+            inMeter->setMax(6.0);
+            inMeter->setDefaultValue(-80.0);
+            inMeter->setStyle_(VSTGUI::PDisplay::kUpdateMax);
+            inMeter->CParamDisplay::setValue(-80.0);
         }
         if (control->getTag() == kOut) {
             outMeter = control;
             outMeter->registerViewListener(this);
-            outMeter->CParamDisplay::setValue(outMeter->getDefaultValue());
+            outMeter->setMin(-80.0);
+            outMeter->setMax(6.0);
+            outMeter->setDefaultValue(-80.0);
+            outMeter->setStyle_(VSTGUI::PDisplay::kUpdateMax);
+            outMeter->CParamDisplay::setValue(-80.0);
         }
         if (control->getTag() == kGR) {
             grMeter = control;
             grMeter->registerViewListener(this);
-            grMeter->CParamDisplay::setValue(grMeter->getDefaultValue());
+            grMeter->setMin(-80.0);
+            grMeter->setMax(0.0);
+            grMeter->setDefaultValue(0.0);
+            grMeter->setStyle_(VSTGUI::PDisplay::kUpdateMin);
+            grMeter->CParamDisplay::setValue(0.0);
         }
     }
-
+#define minVU -44.0 // need that margin at bottom
+#define maxVU 6.0
     if (MyVuMeter* control = dynamic_cast<MyVuMeter*>(view); control) {
-        if (control->getTag() == kInL)  { vuMeterInL  = control; vuMeterInL-> registerViewListener(this); }
-        if (control->getTag() == kInR)  { vuMeterInR  = control; vuMeterInR-> registerViewListener(this); }
-        if (control->getTag() == kOutL) { vuMeterOutL = control; vuMeterOutL->registerViewListener(this); }
-        if (control->getTag() == kOutR) { vuMeterOutR = control; vuMeterOutR->registerViewListener(this); }
-        if (control->getTag() == kGR)   { vuMeterGR   = control; vuMeterGR->  registerViewListener(this); }
+        if (control->getTag() == kInLRMS || control->getTag() == kInLPeak)  {
+            vuMeterInL  = control;
+            vuMeterInL->setMin(minVU);
+            vuMeterInL->setMax(maxVU);
+            vuMeterInL->setDefaultValue(minVU);
+            vuMeterInL->registerViewListener(this);
+        }
+        if (control->getTag() == kInRRMS || control->getTag() == kInRPeak)  {
+            vuMeterInR  = control;
+            vuMeterInR->setMin(minVU);
+            vuMeterInR->setMax(maxVU);
+            vuMeterInR->setDefaultValue(minVU);
+            vuMeterInR-> registerViewListener(this);
+        }
+        if (control->getTag() == kOutLRMS || control->getTag() == kOutLPeak) {
+            vuMeterOutL = control;
+            vuMeterOutL->setMin(minVU);
+            vuMeterOutL->setMax(maxVU);
+            vuMeterOutL->setDefaultValue(minVU);
+            vuMeterOutL->registerViewListener(this);
+        }
+        if (control->getTag() == kOutRRMS || control->getTag() == kOutRPeak) {
+            vuMeterOutR = control;
+            vuMeterOutR->setMin(minVU);
+            vuMeterOutR->setMax(maxVU);
+            vuMeterOutR->setDefaultValue(minVU);
+            vuMeterOutR->registerViewListener(this);
+        }
+        if (control->getTag() == kGR)   {
+            vuMeterGR   = control;
+            vuMeterGR->setMin(minVU);
+            vuMeterGR->setMax(maxVU+1.0);
+            vuMeterGR->setDefaultValue(0.0);
+            vuMeterGR->  registerViewListener(this);
+        }
     }
 
     return view;
@@ -587,7 +712,9 @@ IPlugView* PLUGIN_API VLC_CompController::createView (FIDString name)
         _zoomFactors.push_back(2.00);
         view->setAllowedZoomFactors(_zoomFactors);
         view->setZoomFactor(0.5);
-        view->setIdleRate(1.0/60.0);
+        view->setIdleRate(1000.0/60.0);
+        
+        VSTGUI::CView::kDirtyCallAlwaysOnMainThread = true;
 
         setKnobMode(Steinberg::Vst::KnobModes::kLinearMode);
         
@@ -684,11 +811,15 @@ tresult PLUGIN_API VLC_CompController::notify(Vst::IMessage* message)
     {
         double data = 0.0;
         int64 update = 0.0;
-        if (message->getAttributes ()->getFloat ("vuInL",    data) == kResultTrue) vuInL    = data;
-        if (message->getAttributes ()->getFloat ("vuInR",    data) == kResultTrue) vuInR    = data;
+        if (message->getAttributes ()->getFloat ("vuInLRMS",    data) == kResultTrue) vuInLRMS    = data;
+        if (message->getAttributes ()->getFloat ("vuInRRMS",    data) == kResultTrue) vuInRRMS    = data;
+        if (message->getAttributes ()->getFloat ("vuInLPeak",    data) == kResultTrue) vuInLPeak    = data;
+        if (message->getAttributes ()->getFloat ("vuInRPeak",    data) == kResultTrue) vuInRPeak    = data;
         if (message->getAttributes ()->getFloat ("tpIn",     data) == kResultTrue) tpIn     = data;
-        if (message->getAttributes ()->getFloat ("vuOutL",   data) == kResultTrue) vuOutL   = data;
-        if (message->getAttributes ()->getFloat ("vuOutR",   data) == kResultTrue) vuOutR   = data;
+        if (message->getAttributes ()->getFloat ("vuOutLRMS",   data) == kResultTrue) vuOutLRMS   = data;
+        if (message->getAttributes ()->getFloat ("vuOutRRMS",   data) == kResultTrue) vuOutRRMS   = data;
+        if (message->getAttributes ()->getFloat ("vuOutLPeak",   data) == kResultTrue) vuOutLPeak   = data;
+        if (message->getAttributes ()->getFloat ("vuOutRPeak",   data) == kResultTrue) vuOutRPeak   = data;
         if (message->getAttributes ()->getFloat ("tpOut",    data) == kResultTrue) tpOut    = data;
         if (message->getAttributes ()->getFloat ("vuGR",     data) == kResultTrue) vuGR     = data;
         if (message->getAttributes ()->getInt   ("update", update) == kResultTrue) {
@@ -698,6 +829,7 @@ tresult PLUGIN_API VLC_CompController::notify(Vst::IMessage* message)
                 }
             }
         }
+        
         return kResultOk;
     }
     return EditControllerEx1::notify(message);

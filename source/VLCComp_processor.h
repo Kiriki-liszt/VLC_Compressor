@@ -9,7 +9,7 @@
 
 #include <cmath>
 #define decibelsToGain(f_db)  (std::pow(10.0, f_db / 20.0))
-#define gainToDecibels(f_lin) ((f_lin>0)?(20.0 * log10(f_lin)):(-80.0))
+#define gainToDecibels(f_lin) ((f_lin>0)?(20.0 * log10(f_lin)):(-100.0))
 
 namespace yg331 {
 class LevelEnvelopeFollower
@@ -50,42 +50,17 @@ public:
         for (auto& s : state)
             s = gainToDecibels(0.0);
     }
-
-    template <typename SampleType>
-    void update(SampleType** channelData, int numChannels, int numSamples)
-    {
-        if (numChannels <= 0) return;
-        if (numSamples <= 0) return;
-        if (numChannels > state.size()) return;
-
-        for (int ch = 0; ch < numChannels; ch++) {
-            for (int i = 0; i < numSamples; i++) {
-                if (type == Peak) {
-                    double in = gainToDecibels(std::abs(channelData[ch][i]));
-                    if (in > state[ch])
-                        state[ch] = alphaAttack * state[ch] + (1.0 - alphaAttack) * in;
-                    else
-                        state[ch] = alphaRelease * state[ch] + (1.0 - alphaRelease) * in;
-                }
-                else {
-                    double pwr = gainToDecibels(std::abs(channelData[ch][i]) * std::abs(channelData[ch][i]));
-                    state[ch] = alphaRelease * state[ch] + (1.0 - alphaRelease) * pwr;
-                }
-                
-            }
-        }
-    }
     
     void processSample(double inputSample, int channel)
     {
         if (channel < 0) return;
 
         if (type == Peak) {
-            double in = gainToDecibels(std::abs(inputSample));
-            if (in > state[channel])
-                state[channel] = alphaAttack * state[channel] + (1.0 - alphaAttack) * in;
+            double _in = gainToDecibels(std::abs(inputSample));
+            if (_in > state[channel])
+                state[channel] = _in; // alphaAttack * state[channel] + (1.0 - alphaAttack) * _in;
             else
-                state[channel] = alphaRelease * state[channel] + (1.0 - alphaRelease) * in;
+                state[channel] = alphaRelease * state[channel] + (1.0 - alphaRelease) * _in;
         }
         else {
             double pwr = gainToDecibels(std::abs(inputSample) * std::abs(inputSample));
@@ -98,7 +73,7 @@ public:
         if (channel >= state.size()) return 0.0;
 
         if (type == Peak) return decibelsToGain(state[channel]);
-        else return std::sqrt((decibelsToGain(state[channel]) > 0.0)?decibelsToGain(state[channel]):0.0 );
+        else return std::sqrt( (decibelsToGain(state[channel]) > 0.0) ? decibelsToGain(state[channel]) : 0.0 );
     }
 
 private:
@@ -192,16 +167,12 @@ protected:
     ParamValue pOS = 0.0;
     
     // VU metering ----------------------------------------------------------------
-    LevelEnvelopeFollower VuInput, VuOutput;
-    Sample64 truePeakIn, truePeakOut;
-
-    static SMTG_CONSTEXPR ParamValue init_meter = 0.0;
-    ParamValue Meter = init_meter;
-    std::vector<std::vector<ParamValue>> buff;
-    std::vector<ParamValue*> buff_head;
-    std::vector<ParamValue> fInputVu;
-    std::vector<ParamValue> fOutputVu;
-    ParamValue fMeterVu = init_meter;
+    LevelEnvelopeFollower VuInputRMS, VuOutputRMS;
+    LevelEnvelopeFollower VuInputPeak, VuOutputPeak;
+    std::vector<ParamValue> fInputVuRMS, fOutputVuRMS;  // for each channel
+    std::vector<ParamValue> fInputVuPeak, fOutputVuPeak;
+    Sample64 truePeakIn = 0.0, truePeakOut = 0.0;
+    Sample64 gainReduction = 0.0;
     
     // Internal Variables
     SampleRate SR = 48000.0;
@@ -209,8 +180,8 @@ protected:
     
     Sample64 f_sum = 0.0;
     Sample64 f_amp = 0.0;
-    Sample64 f_gain = 0.0;
-    Sample64 f_gain_out = 0.0;
+    Sample64 f_gain = 1.0;
+    Sample64 f_gain_out = 1.0;
     Sample64 f_env = 0.0;
     Sample64 f_env_rms = 0.0;
     Sample64 f_env_peak = 0.0;

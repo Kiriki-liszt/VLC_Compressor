@@ -11,14 +11,62 @@
 namespace VSTGUI {
 class PDisplay : public CParamDisplay {
 public:
+    enum updateStyle
+    {
+        kUpdateMin = 1 << 0,
+        kUpdateMax = 1 << 1,
+    };
     PDisplay (const CRect& size, CBitmap* background = nullptr, int32_t style = 0)
         : CParamDisplay(size, background, style)
-    {setWantsIdle(true);};
+    {setWantsIdle(true); originalBack = getBackColor();};
     PDisplay (const CParamDisplay& paramDisplay)
         : CParamDisplay(paramDisplay)
-    {setWantsIdle(true);};
+    {setWantsIdle(true); originalBack = getBackColor();};
     void onIdle() override {
         invalid();
+    };
+    void setValue(float val) override {
+        directValue = val;
+        if (_style == kUpdateMax)
+            CParamDisplay::setValue(std::max(getValue(), val));
+        else
+            CParamDisplay::setValue(std::min(getValue(), val));
+        
+        if (_style == kUpdateMax)
+            if (getValue()>0.0)
+                if (!over) {
+                    originalBack = getBackColor();
+                    setBackColor(VSTGUI::kRedCColor);
+                    over = true;
+                }
+    };
+    void onMouseDownEvent(MouseDownEvent& event) override {
+        if (over) {
+            setBackColor(originalBack);
+            over = false;
+        }
+        CParamDisplay::setValue(directValue);
+        CParamDisplay::onMouseDownEvent(event);
+    };
+    void setStyle_(int32_t newStyle) { _style = newStyle; }
+    int32_t getStyle_() const { return _style; }
+    int32_t     _style;
+    float directValue = 0.0;
+    bool over = false;
+    CColor originalBack;
+};
+//------------------------------------------------------------------------
+//  Metering reset container
+//------------------------------------------------------------------------
+class MeterViewContainer : public CViewContainer {
+public:
+    MeterViewContainer(const CRect& size) : CViewContainer(size) {};
+    void onMouseDownEvent(MouseDownEvent& event) override {
+        for (auto& child : getChildren())
+        {
+            child->onMouseDownEvent(event);
+        }
+        CViewContainer::onMouseDownEvent(event);
     };
 };
 //------------------------------------------------------------------------
@@ -199,7 +247,7 @@ public:
 private:
     using CControl       = VSTGUI::CControl;
     using CView          = VSTGUI::CView;
-    using PDisplay        = VSTGUI::PDisplay;
+    using PDisplay       = VSTGUI::PDisplay;
     using MyVuMeter      = VSTGUI::MyVuMeter;
     using UTF8String     = VSTGUI::UTF8String;
     using UIAttributes   = VSTGUI::UIAttributes;
@@ -334,11 +382,15 @@ public:
    {
        switch (tag) {
            case kIn:     return tpIn;    break;
-           case kInL:    return vuInL;    break;
-           case kInR:    return vuInR;    break;
+           case kInLRMS:    return vuInLRMS;    break;
+           case kInRRMS:    return vuInRRMS;    break;
+           case kInLPeak:    return vuInLPeak;    break;
+           case kInRPeak:    return vuInRPeak;    break;
            case kOut:    return tpOut;   break;
-           case kOutL:   return vuOutL;   break;
-           case kOutR:   return vuOutR;   break;
+           case kOutLRMS:   return vuOutLRMS;   break;
+           case kOutRRMS:   return vuOutRRMS;   break;
+           case kOutLPeak:   return vuOutLPeak;   break;
+           case kOutRPeak:   return vuOutRPeak;   break;
            case kGR:     return vuGR;     break;
            default: break;
        }
@@ -377,7 +429,11 @@ protected:
     using UIVuMeterControllerList = std::vector<UIVuMeterController*>;
     UIVuMeterControllerList vuMeterControllers;
     
-    Steinberg::Vst::ParamValue vuInL = 0.0, vuInR = 0.0, vuOutL = 0.0, vuOutR = 0.0, vuGR = 0.0;
+    Steinberg::Vst::ParamValue vuInLRMS = 0.0, vuInRRMS = 0.0;
+    Steinberg::Vst::ParamValue vuInLPeak = 0.0, vuInRPeak = 0.0;
+    Steinberg::Vst::ParamValue vuOutLRMS = 0.0, vuOutRRMS = 0.0;
+    Steinberg::Vst::ParamValue vuOutLPeak = 0.0, vuOutRPeak = 0.0;
+    Steinberg::Vst::ParamValue vuGR = 0.0;
     Steinberg::Vst::ParamValue tpIn = 0.0, tpOut = 0.0;
 };
 

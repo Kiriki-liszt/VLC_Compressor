@@ -21,7 +21,7 @@ using uint32     = Steinberg::uint32;
 
 typedef struct rms_env
 {
-    ParamValue pf_buf[RMS_BUF_SIZE];
+    ParamValue pf_buf[RMS_BUF_SIZE] = {0.0, };
     uint32     i_pos = 0;
     uint32     i_count = 0;
     ParamValue f_sum = 0.0;
@@ -32,7 +32,7 @@ typedef struct lookahead
 {
     struct
     {
-        ParamValue pf_vals[AOUT_CHAN_MAX];
+        ParamValue pf_vals[AOUT_CHAN_MAX] = {0.0, };
         ParamValue f_lev_in = 0.0;
 
     } p_buf[LOOKAHEAD_SIZE];
@@ -92,12 +92,16 @@ static constexpr ParamValue dftMix = 100.0;
 enum
 {
     kIn = 100,
-    kInL = 101,
-    kInR = 102,
-    kOut = 103,
-    kOutL = 104,
-    kOutR = 105,
-    kGR = 106,
+    kInLRMS,
+    kInRRMS,
+    kInLPeak,
+    kInRPeak,
+    kOut,
+    kOutLRMS,
+    kOutRRMS,
+    kOutLPeak,
+    kOutRPeak,
+    kGR
 };
 //------------------------------------------------------------------------
 } // namespace yg331

@@ -59,13 +59,10 @@ tresult PLUGIN_API VLC_CompProcessor::terminate ()
 	// Here the Plug-in will be de-instantiated, last possibility to remove some memory!
 #define clear_delete(vec) {vec.clear(); vec.shrink_to_fit();}
 
-    clear_delete(fInputVu);
-    clear_delete(fOutputVu);
-
-    for (auto& loop : buff)
-        clear_delete(loop);
-    clear_delete(buff);
-    clear_delete(buff_head);
+    clear_delete(fInputVuRMS);
+    clear_delete(fOutputVuRMS);
+    clear_delete(fInputVuPeak);
+    clear_delete(fOutputVuPeak);
     
 	//---do not forget to call parent ------
 	return AudioEffect::terminate ();
@@ -103,19 +100,19 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
                     case kParamInput:  pInput  = value; break;
                     case kParamOutput: pOutput = value; break;
 
-                    case kParamRMS_PEAK:  pRMS_PEAK = value; break;
-                    case kParamAttack:    pAttack = value; break;
-                    case kParamRelease:   pRelease = value; break;
+                    case kParamRMS_PEAK:  pRMS_PEAK  = value; break;
+                    case kParamAttack:    pAttack    = value; break;
+                    case kParamRelease:   pRelease   = value; break;
                     case kParamThreshold: pThreshold = value; break;
-                    case kParamRatio:     pRatio = value; break;
-                    case kParamKnee:      pKnee = value; break;
-                    case kParamMakeup:    pMakeup = value; break;
-                    case kParamMix:       pMix = value; break;
+                    case kParamRatio:     pRatio     = value; break;
+                    case kParamKnee:      pKnee      = value; break;
+                    case kParamMakeup:    pMakeup    = value; break;
+                    case kParamMix:       pMix       = value; break;
 
-                    case kParamOS:        pOS = value; break;
-                    case kParamZoom:      pZoom = value; break;
+                    case kParamOS:        pOS        = value; break;
+                    case kParamZoom:      pZoom      = value; break;
 
-                    case kParamBypass:    pBypass = (value > 0.5); break;
+                    case kParamBypass:    pBypass    = (value > 0.5); break;
                     }
                 }
             }
@@ -137,10 +134,14 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
     void** out = getChannelBuffersPointer(processSetup, data.outputs[0]);
     Vst::SampleRate SampleRate = processSetup.sampleRate;
     
-    // init VuMeters
-    for (auto& loop : fInputVu) loop = init_meter;
-    for (auto& loop : fOutputVu) loop = init_meter;
-    fMeterVu = 1.0;
+    // Reset values, linear
+    gainReduction = 1.0;
+    truePeakIn  = 0.0;
+    truePeakOut = 0.0;
+    for (auto& loop : fInputVuRMS) loop = 0.0;
+    for (auto& loop : fOutputVuRMS) loop = 0.0;
+    for (auto& loop : fInputVuPeak) loop = 0.0;
+    for (auto& loop : fOutputVuPeak) loop = 0.0;
 
     //---check if silence---------------
     // check if all channel are silent then process silent
@@ -182,26 +183,43 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
             }
         }
         
-        for (auto& loop : fInputVu) loop = Lin2Db(loop);
-        for (auto& loop : fOutputVu) loop = Lin2Db(loop);
+        // Linear to dB
+        for (auto& loop : fInputVuRMS) loop = Lin2Db(loop);
+        for (auto& loop : fOutputVuRMS) loop = Lin2Db(loop);
+        for (auto& loop : fInputVuPeak) loop = Lin2Db(loop);
+        for (auto& loop : fOutputVuPeak) loop = Lin2Db(loop);
         truePeakIn = Lin2Db(truePeakIn);
         truePeakOut = Lin2Db(truePeakOut);
-        fMeterVu = Lin2Db(fMeterVu);
+        gainReduction = Lin2Db(gainReduction);
     }
     
     //---send a message
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
     {
         message->setMessageID ("VUmeter");
-        double data = (numChannels > 0) ? fInputVu[0] : 0.0;
-        message->getAttributes()->setFloat ("vuInL", data);
+        double data = (numChannels > 0) ? fInputVuRMS[0] : 0.0;
+        message->getAttributes()->setFloat ("vuInLRMS", data);
         sendMessage (message);
     }
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
     {
         message->setMessageID ("VUmeter");
-        double data = (numChannels > 1) ? fInputVu[1] : ((numChannels > 0) ? fInputVu[0] : 0.0);
-        message->getAttributes ()->setFloat ("vuInR", data);
+        double data = (numChannels > 1) ? fInputVuRMS[1] : ((numChannels > 0) ? fInputVuRMS[0] : 0.0);
+        message->getAttributes ()->setFloat ("vuInRRMS", data);
+        sendMessage (message);
+    }
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = (numChannels > 0) ? fInputVuPeak[0] : 0.0;
+        message->getAttributes()->setFloat ("vuInLPeak", data);
+        sendMessage (message);
+    }
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = (numChannels > 1) ? fInputVuPeak[1] : ((numChannels > 0) ? fInputVuPeak[0] : 0.0);
+        message->getAttributes ()->setFloat ("vuInRPeak", data);
         sendMessage (message);
     }
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
@@ -214,18 +232,31 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
     {
         message->setMessageID ("VUmeter");
-        double data = (numChannels > 0) ? fOutputVu[0] : 0.0;
-        message->getAttributes ()->setFloat ("vuOutL", data);
+        double data = (numChannels > 0) ? fOutputVuRMS[0] : 0.0;
+        message->getAttributes ()->setFloat ("vuOutLRMS", data);
         sendMessage (message);
     }
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
     {
         message->setMessageID ("VUmeter");
-        double data = (numChannels > 1) ? fOutputVu[1] : ((numChannels > 0) ? fOutputVu[0] : 0.0);
-        message->getAttributes ()->setFloat ("vuOutR", data);
+        double data = (numChannels > 1) ? fOutputVuRMS[1] : ((numChannels > 0) ? fOutputVuRMS[0] : 0.0);
+        message->getAttributes ()->setFloat ("vuOutRRMS", data);
         sendMessage (message);
     }
-    
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = (numChannels > 0) ? fOutputVuPeak[0] : 0.0;
+        message->getAttributes ()->setFloat ("vuOutLPeak", data);
+        sendMessage (message);
+    }
+    if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
+    {
+        message->setMessageID ("VUmeter");
+        double data = (numChannels > 1) ? fOutputVuPeak[1] : ((numChannels > 0) ? fOutputVuPeak[0] : 0.0);
+        message->getAttributes ()->setFloat ("vuOutRPeak", data);
+        sendMessage (message);
+    }
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
     {
         message->setMessageID ("VUmeter");
@@ -236,7 +267,7 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
     if (IPtr<Vst::IMessage> message = owned (allocateMessage ()))
     {
         message->setMessageID ("VUmeter");
-        double data = fMeterVu;
+        double data = gainReduction;
         message->getAttributes ()->setFloat ("vuGR", data);
         sendMessage (message);
     }
@@ -246,7 +277,6 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
         message->getAttributes ()->setInt ("update", true);
         sendMessage (message);
     }
-    // FDebugPrint("fOutputVu[0] = %f\n", fOutputVu[0]);
     return kResultOk;
 }
 
@@ -259,35 +289,39 @@ uint32 PLUGIN_API VLC_CompProcessor::getLatencySamples()
 tresult PLUGIN_API VLC_CompProcessor::setupProcessing (Vst::ProcessSetup& newSetup)
 {
     /* Calculate the RMS and lookahead sizes from the sample rate */
-    SR = newSetup.sampleRate;
     f_num = 0.01 * newSetup.sampleRate;
     p_rms.i_count = Round( Clamp( 0.5 * f_num, 1.0, RMS_BUF_SIZE ) );
-    p_la.i_count = Round( Clamp( f_num, 1.0, LOOKAHEAD_SIZE ) );
+    p_la.i_count  = Round( Clamp( f_num, 1.0, LOOKAHEAD_SIZE ) );
     
     Vst::SpeakerArrangement arr;
     getBusArrangement(Vst::BusDirections::kInput, 0, arr);
     uint16_t numChannels = static_cast<uint16_t> (Vst::SpeakerArr::getChannelCount(arr));
 
-    VuInput.setChannel(numChannels);
-    VuInput.setType(LevelEnvelopeFollower::Peak);
-    VuInput.setDecay(3.0);
-    VuInput.prepare(newSetup.sampleRate);
+    VuInputRMS.setChannel(numChannels);
+    VuInputRMS.setType(LevelEnvelopeFollower::RMS);
+    VuInputRMS.setDecay(0.3);
+    VuInputRMS.prepare(newSetup.sampleRate);
 
-    VuOutput.setChannel(numChannels);
-    VuOutput.setType(LevelEnvelopeFollower::Peak);
-    VuOutput.setDecay(3.0);
-    VuOutput.prepare(newSetup.sampleRate);
+    VuOutputRMS.setChannel(numChannels);
+    VuOutputRMS.setType(LevelEnvelopeFollower::RMS);
+    VuOutputRMS.setDecay(0.3);
+    VuOutputRMS.prepare(newSetup.sampleRate);
+    
+    VuInputPeak.setChannel(numChannels);
+    VuInputPeak.setType(LevelEnvelopeFollower::Peak);
+    VuInputPeak.setDecay(1.0);
+    VuInputPeak.prepare(newSetup.sampleRate);
 
-    fInputVu.resize(numChannels, 0.0);
-    fOutputVu.resize(numChannels, 0.0);
+    VuOutputPeak.setChannel(numChannels);
+    VuOutputPeak.setType(LevelEnvelopeFollower::Peak);
+    VuOutputPeak.setDecay(1.0);
+    VuOutputPeak.prepare(newSetup.sampleRate);
 
-    buff.resize(numChannels);
-    buff_head.resize(numChannels);
-    for (int channel = 0; channel < numChannels; channel++)
-    {
-        buff[channel].resize(newSetup.maxSamplesPerBlock, 0.0);
-        buff_head[channel] = buff[channel].data();
-    }
+    fInputVuRMS.resize(numChannels, 0.0);
+    fOutputVuRMS.resize(numChannels, 0.0);
+    fInputVuPeak.resize(numChannels, 0.0);
+    fOutputVuPeak.resize(numChannels, 0.0);
+
 	//--- called before any processing ----
 	return AudioEffect::setupProcessing (newSetup);
 }
@@ -419,10 +453,6 @@ void VLC_CompProcessor::processAudio(
     Vst::Sample64 f_ef_a     = f_ga * 0.25;
     //Vst::Sample64 f_ef_ai    = 1.0 - f_ef_a;
     
-    Vst::Sample64 min_GR = 1.0;
-    truePeakIn = 0.0;
-    truePeakOut = 0.0;
-
     /* Process the current buffer */
     for( int i = 0; i < i_samples; i++ )
     {
@@ -504,7 +534,6 @@ void VLC_CompProcessor::processAudio(
 
         /* Find the total gain */
         f_gain = f_gain * f_ef_a + f_gain_out * (1.0 - f_ef_a); //inertia to the gain change, with quater of attack
-        if(min_GR > f_gain) min_GR = f_gain;
 
         /* Write the resulting buffer to the output */
         //BufferProcess( inputs, outputs, i_channels, f_gain, f_mug, p_la );
@@ -520,10 +549,11 @@ void VLC_CompProcessor::processAudio(
             
             if(truePeakIn < f_x) truePeakIn = f_x;
             if(truePeakOut < outputs[i_chan][i]) truePeakOut = outputs[i_chan][i];
-            VuInput.processSample(f_x, i_chan);
-            VuOutput.processSample(outputs[i_chan][i], i_chan);
-
-            buff[i_chan].at(i) = p_la.p_buf[p_la.i_pos].pf_vals[i_chan];
+            if(gainReduction > f_gain) gainReduction = f_gain;
+            VuInputRMS.processSample(f_x, i_chan);
+            VuOutputRMS.processSample(outputs[i_chan][i], i_chan);
+            VuInputPeak.processSample(f_x, i_chan);
+            VuOutputPeak.processSample(outputs[i_chan][i], i_chan);
 
             /* Update the delayed buffer value */
             p_la.p_buf[p_la.i_pos].pf_vals[i_chan] = f_x;
@@ -532,16 +562,14 @@ void VLC_CompProcessor::processAudio(
         /* Go to the next delayed buffer value for the next run */
         p_la.i_pos = ( p_la.i_pos + 1 ) % ( p_la.i_count );
     }
-    fMeterVu = min_GR;
-    /*
-    VuInput.update(buff_head.data(), numChannels, sampleFrames);
-    VuOutput.update<SampleType>(outputs, numChannels, sampleFrames);
-    fMeterVu = min_GR;
-    */
+
+    // evaluate max values from this sample block
     for (int ch = 0; ch < numChannels; ch++)
     {
-        fInputVu[ch]  = VuInput.getEnv(ch);
-        fOutputVu[ch] = VuOutput.getEnv(ch);
+        fInputVuRMS[ch]  = VuInputRMS.getEnv(ch);
+        fOutputVuRMS[ch] = VuOutputRMS.getEnv(ch);
+        fInputVuPeak[ch]  = VuInputPeak.getEnv(ch);
+        fOutputVuPeak[ch] = VuOutputPeak.getEnv(ch);
     }
 
     return;
@@ -557,7 +585,7 @@ double VLC_CompProcessor::Db2Lin(double f_db)
 
 double VLC_CompProcessor::Lin2Db(double f_lin)
 {
-    return (f_lin>0.0)?(20.0 * std::log10(f_lin)):(-80.0);
+    return (f_lin>0.0)?(20.0 * std::log10(f_lin)):(-100.0);
 }
 /* Zero out denormals by adding and subtracting a small number, from Laurent de Soras */
 void VLC_CompProcessor::RoundToZero( Vst::ParamValue *pf_x )
