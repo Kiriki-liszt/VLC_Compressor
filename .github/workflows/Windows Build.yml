@@ -48,5 +48,5 @@ jobs:
     - name: Upload VST
       uses: actions/upload-artifact@v4
       with:
-        name: build-VST3-${{ matrix.os }}-${{ env.build-type }}
+        name: ${{ github.event.repository.name }}-${{ matrix.os }}-${{ github.sha }}
         path: build/VST3
