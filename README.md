@@ -1,6 +1,9 @@
 # VLC Compressor  
 
-Port of VLC Compressor, a dynamic range compressor ported from plugins from LADSPA SWH  
+Port of VLC Compressor, a dynamic range compressor ported from plugins from LADSPA SWH.  
+
+Runs in double precision 64-bit internal processing. Also double precision input / output if supported.  
+Has a fixed 10ms lookahead and latency.  
 
 [![GitHub Release](https://img.shields.io/github/v/release/kiriki-liszt/VLC_Compressor?style=flat-square&label=Get%20latest%20Release)](https://github.com/Kiriki-liszt/VLC_Compressor/releases/latest)
 [![GitHub Downloads (all assets, all releases)](https://img.shields.io/github/downloads/kiriki-liszt/VLC_Compressor/total?style=flat-square&label=total%20downloads&color=blue)](https://tooomm.github.io/github-release-stats/?username=Kiriki-liszt&repository=VLC_Compressor)  
