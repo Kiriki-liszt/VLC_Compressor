@@ -69,6 +69,7 @@ Supports Windows, Mac, Linux(same as VSTSDK).
 ## Version logs
 
 v1.0.0: intial try.  
+v1.0.1: Latency bypass fix.  
 
 ## references
 

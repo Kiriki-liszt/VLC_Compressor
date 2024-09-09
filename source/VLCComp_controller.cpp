@@ -641,22 +641,22 @@ tresult PLUGIN_API VLC_CompController::setComponentState (IBStream* state)
     Vst::ParamValue savedKnee       = 0.0;
     Vst::ParamValue savedMakeup     = 0.0;
     Vst::ParamValue savedMix        = 0.0;
-    Vst::ParamValue savedSoftBypass = 0.0;
+    int32           savedSoftBypass = 0.0;
     
-    if (streamer.readInt32 (savedBypass)     == false) return kResultFalse;
-    if (streamer.readDouble(savedZoom)       == false) return kResultFalse;
-    if (streamer.readDouble(savedOS)         == false) return kResultFalse;
-    if (streamer.readDouble(savedInput)      == false) return kResultFalse;
-    if (streamer.readDouble(savedOutput)     == false) return kResultFalse;
-    if (streamer.readDouble(savedRMS_PEAK)   == false) return kResultFalse;
-    if (streamer.readDouble(savedAttack)     == false) return kResultFalse;
-    if (streamer.readDouble(savedRelease)    == false) return kResultFalse;
-    if (streamer.readDouble(savedThreshold)  == false) return kResultFalse;
-    if (streamer.readDouble(savedRatio)      == false) return kResultFalse;
-    if (streamer.readDouble(savedKnee)       == false) return kResultFalse;
-    if (streamer.readDouble(savedMakeup)     == false) return kResultFalse;
-    if (streamer.readDouble(savedMix)        == false) return kResultFalse;
-    if (streamer.readDouble(savedSoftBypass) == false) return kResultFalse;
+    if (streamer.readInt32 (savedBypass)     == false) savedBypass     = 0;
+    if (streamer.readDouble(savedZoom)       == false) savedZoom       = 2.0 / 6.0;
+    if (streamer.readDouble(savedOS)         == false) savedOS         = 0.0;
+    if (streamer.readDouble(savedInput)      == false) savedInput      = nrmInput;
+    if (streamer.readDouble(savedOutput)     == false) savedOutput     = nrmOutput;
+    if (streamer.readDouble(savedRMS_PEAK)   == false) savedRMS_PEAK   = nrmRMS_PEAK;
+    if (streamer.readDouble(savedAttack)     == false) savedAttack     = nrmAttack;
+    if (streamer.readDouble(savedRelease)    == false) savedRelease    = nrmRelease;
+    if (streamer.readDouble(savedThreshold)  == false) savedThreshold  = nrmThreshold;
+    if (streamer.readDouble(savedRatio)      == false) savedRatio      = nrmRatio;
+    if (streamer.readDouble(savedKnee)       == false) savedKnee       = nrmKnee;
+    if (streamer.readDouble(savedMakeup)     == false) savedMakeup     = nrmMakeup;
+    if (streamer.readDouble(savedMix)        == false) savedMix        = nrmMix;
+    if (streamer.readInt32 (savedSoftBypass) == false) savedSoftBypass = 0;
 
     setParamNormalized(kParamBypass,     savedBypass ? 1 : 0);
     setParamNormalized(kParamZoom,       savedZoom);
@@ -671,7 +671,7 @@ tresult PLUGIN_API VLC_CompController::setComponentState (IBStream* state)
     setParamNormalized(kParamKnee,       savedKnee);
     setParamNormalized(kParamMakeup,     savedMakeup);
     setParamNormalized(kParamMix,        savedMix);
-    setParamNormalized(kParamSoftBypass, savedSoftBypass);
+    setParamNormalized(kParamSoftBypass, savedSoftBypass ? 1 : 0);
 
 	return kResultOk;
 }

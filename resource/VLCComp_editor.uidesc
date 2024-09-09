@@ -220,7 +220,7 @@
 					"CTextButton": {
 						"attributes": {
 							"class": "CTextButton",
-							"control-tag": "Bypass",
+							"control-tag": "SoftBypass",
 							"default-value": "0",
 							"font": "~ SystemFont",
 							"frame-color": "Pantone P Process Black C Color | #231f20",
@@ -3928,7 +3928,7 @@
 													"text-inset": "0, 0",
 													"text-rotation": "0",
 													"text-shadow-offset": "1, 1",
-													"title": "-0.2 dB",
+													"title": "0.0 dB",
 													"transparent": "false",
 													"value-precision": "2",
 													"wants-focus": "false",

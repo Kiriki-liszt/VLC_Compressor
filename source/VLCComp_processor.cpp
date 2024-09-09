@@ -94,25 +94,23 @@ tresult PLUGIN_API VLC_CompProcessor::process (Vst::ProcessData& data)
                 int32 sampleOffset;
                 int32 numPoints = paramQueue->getPointCount();
 
-                /*/*/
                 if (paramQueue->getPoint(numPoints - 1, sampleOffset, value) == kResultTrue) {
                     switch (paramQueue->getParameterId()) {
-                    case kParamInput:  pInput  = value; break;
-                    case kParamOutput: pOutput = value; break;
-
-                    case kParamRMS_PEAK:  pRMS_PEAK  = value; break;
-                    case kParamAttack:    pAttack    = value; break;
-                    case kParamRelease:   pRelease   = value; break;
-                    case kParamThreshold: pThreshold = value; break;
-                    case kParamRatio:     pRatio     = value; break;
-                    case kParamKnee:      pKnee      = value; break;
-                    case kParamMakeup:    pMakeup    = value; break;
-                    case kParamMix:       pMix       = value; break;
-
-                    case kParamOS:        pOS        = value; break;
-                    case kParamZoom:      pZoom      = value; break;
-
-                    case kParamBypass:    pBypass    = (value > 0.5); break;
+                        case kParamBypass:     pBypass     = (value > 0.5); break;
+                        case kParamZoom:       pZoom       = value; break;
+                        case kParamOS:         pOS         = value; break;
+                        case kParamInput:      pInput      = value; break;
+                        case kParamOutput:     pOutput     = value; break;
+                        case kParamRMS_PEAK:   pRMS_PEAK   = value; break;
+                        case kParamAttack:     pAttack     = value; break;
+                        case kParamRelease:    pRelease    = value; break;
+                        case kParamThreshold:  pThreshold  = value; break;
+                        case kParamRatio:      pRatio      = value; break;
+                        case kParamKnee:       pKnee       = value; break;
+                        case kParamMakeup:     pMakeup     = value; break;
+                        case kParamMix:        pMix        = value; break;
+                        case kParamSoftBypass: pSoftBypass = (value > 0.5); break;
+                        default: break;
                     }
                 }
             }
@@ -289,6 +287,7 @@ uint32 PLUGIN_API VLC_CompProcessor::getLatencySamples()
 tresult PLUGIN_API VLC_CompProcessor::setupProcessing (Vst::ProcessSetup& newSetup)
 {
     /* Calculate the RMS and lookahead sizes from the sample rate */
+    SR = newSetup.sampleRate;
     f_num = 0.01 * newSetup.sampleRate;
     p_rms.i_count = Round( Clamp( 0.5 * f_num, 1.0, RMS_BUF_SIZE ) );
     p_la.i_count  = Round( Clamp( f_num, 1.0, LOOKAHEAD_SIZE ) );
@@ -359,22 +358,22 @@ tresult PLUGIN_API VLC_CompProcessor::setState (IBStream* state)
     Vst::ParamValue savedKnee       = 0.0;
     Vst::ParamValue savedMakeup     = 0.0;
     Vst::ParamValue savedMix        = 0.0;
-    Vst::ParamValue savedSoftBypass = 0.0;
+    int32           savedSoftBypass = 0.0;
     
-    if (streamer.readInt32 (savedBypass)     == false) return kResultFalse;
-    if (streamer.readDouble(savedZoom)       == false) return kResultFalse;
-    if (streamer.readDouble(savedOS)         == false) return kResultFalse;
-    if (streamer.readDouble(savedInput)      == false) return kResultFalse;
-    if (streamer.readDouble(savedOutput)     == false) return kResultFalse;
-    if (streamer.readDouble(savedRMS_PEAK)   == false) return kResultFalse;
-    if (streamer.readDouble(savedAttack)     == false) return kResultFalse;
-    if (streamer.readDouble(savedRelease)    == false) return kResultFalse;
-    if (streamer.readDouble(savedThreshold)  == false) return kResultFalse;
-    if (streamer.readDouble(savedRatio)      == false) return kResultFalse;
-    if (streamer.readDouble(savedKnee)       == false) return kResultFalse;
-    if (streamer.readDouble(savedMakeup)     == false) return kResultFalse;
-    if (streamer.readDouble(savedMix)        == false) return kResultFalse;
-    if (streamer.readDouble(savedSoftBypass) == false) return kResultFalse;
+    if (streamer.readInt32 (savedBypass)     == false) savedBypass     = 0;
+    if (streamer.readDouble(savedZoom)       == false) savedZoom       = 2.0 / 6.0;
+    if (streamer.readDouble(savedOS)         == false) savedOS         = 0.0;
+    if (streamer.readDouble(savedInput)      == false) savedInput      = nrmInput;
+    if (streamer.readDouble(savedOutput)     == false) savedOutput     = nrmOutput;
+    if (streamer.readDouble(savedRMS_PEAK)   == false) savedRMS_PEAK   = nrmRMS_PEAK;
+    if (streamer.readDouble(savedAttack)     == false) savedAttack     = nrmAttack;
+    if (streamer.readDouble(savedRelease)    == false) savedRelease    = nrmRelease;
+    if (streamer.readDouble(savedThreshold)  == false) savedThreshold  = nrmThreshold;
+    if (streamer.readDouble(savedRatio)      == false) savedRatio      = nrmRatio;
+    if (streamer.readDouble(savedKnee)       == false) savedKnee       = nrmKnee;
+    if (streamer.readDouble(savedMakeup)     == false) savedMakeup     = nrmMakeup;
+    if (streamer.readDouble(savedMix)        == false) savedMix        = nrmMix;
+    if (streamer.readInt32 (savedSoftBypass) == false) savedSoftBypass = 0;
     
     pBypass     = savedBypass > 0;
     pZoom       = savedZoom;
@@ -389,7 +388,7 @@ tresult PLUGIN_API VLC_CompProcessor::setState (IBStream* state)
     pKnee       = savedKnee;
     pMakeup     = savedMakeup;
     pMix        = savedMix;
-    pSoftBypass = savedSoftBypass;
+    pSoftBypass = savedSoftBypass > 0;
 
 	return kResultOk;
 }
@@ -413,7 +412,7 @@ tresult PLUGIN_API VLC_CompProcessor::getState (IBStream* state)
     streamer.writeDouble(pKnee);
     streamer.writeDouble(pMakeup);
     streamer.writeDouble(pMix);
-    streamer.writeDouble(pSoftBypass);
+    streamer.writeInt32(pSoftBypass ? 1 : 0);
     
 	return kResultOk;
 }
@@ -540,13 +539,14 @@ void VLC_CompProcessor::processAudio(
         for( int i_chan = 0; i_chan < i_channels; i_chan++ )
         {
             /* Current buffer value */
-            Vst::ParamValue f_x = inputs[i_chan][i] * inputGain;
+            Vst::ParamValue f_x = inputs[i_chan][i];
 
             /* Output the compressed delayed buffer value */
-            outputs[i_chan][i] = p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * f_gain * f_mug;
+            outputs[i_chan][i] = p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * f_gain * f_mug * inputGain;
             outputs[i_chan][i] = outputs[i_chan][i] * pMix + p_la.p_buf[p_la.i_pos].pf_vals[i_chan] * (1.0 - pMix);
             outputs[i_chan][i] *= outputGain;
             
+            // Update VU meter variables
             if(truePeakIn < f_x) truePeakIn = f_x;
             if(truePeakOut < outputs[i_chan][i]) truePeakOut = outputs[i_chan][i];
             if(gainReduction > f_gain) gainReduction = f_gain;
@@ -554,6 +554,9 @@ void VLC_CompProcessor::processAudio(
             VuOutputRMS.processSample(outputs[i_chan][i], i_chan);
             VuInputPeak.processSample(f_x, i_chan);
             VuOutputPeak.processSample(outputs[i_chan][i], i_chan);
+            
+            // BYPASS
+            if(pSoftBypass) outputs[i_chan][i] = p_la.p_buf[p_la.i_pos].pf_vals[i_chan];
 
             /* Update the delayed buffer value */
             p_la.p_buf[p_la.i_pos].pf_vals[i_chan] = f_x;

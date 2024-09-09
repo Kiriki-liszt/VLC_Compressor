@@ -142,29 +142,23 @@ protected:
     template <typename SampleType>
     void processAudio(SampleType** inputs, SampleType** outputs, int32 numChannels, SampleRate getSampleRate, int32 sampleFrames);
     
-#define Plain2Norm(v, min, max) ((v - min) / (max - min))
-#define Norm2Plain(v, min, max) (v * (max - min) + min)
-    
-#define LogPlain2Norm(v, min, max) (std::log(v / min) / std::log(max / min))
-#define LogNorm2Plain(v, min, max) (min * std::exp(v * std::log(max / min)))
-    
     // Parameters
-    bool       pBypass    = false;
-    ParamValue pInput     = Plain2Norm(dftInput,  minInput,  maxInput);
-    ParamValue pOutput    = Plain2Norm(dftOutput, minOutput, maxOutput);
+    bool       pBypass     = false;
+    ParamValue pInput      = nrmInput;
+    ParamValue pOutput     = nrmOutput;
     
-    ParamValue pRMS_PEAK  = Plain2Norm(dftRMS_PEAK,  minRMS_PEAK,  maxRMS_PEAK);
-    ParamValue pAttack    = LogPlain2Norm(dftAttack,    minAttack,    maxAttack);
-    ParamValue pRelease   = Plain2Norm(dftRelease,   minRelease,   maxRelease);
-    ParamValue pThreshold = Plain2Norm(dftThreshold, minThreshold, maxThreshold);
-    ParamValue pRatio     = Plain2Norm(dftRatio,     minRatio,     maxRatio);
-    ParamValue pKnee      = Plain2Norm(dftKnee,      minKnee,      maxKnee);
-    ParamValue pMakeup    = Plain2Norm(dftMakeup,    minMakeup,    maxMakeup);
-    ParamValue pMix       = Plain2Norm(dftMix,       minMix,       maxMix);
-    ParamValue pSoftBypass = 0.0;
+    ParamValue pRMS_PEAK   = nrmRMS_PEAK;
+    ParamValue pAttack     = nrmAttack;
+    ParamValue pRelease    = nrmRelease;
+    ParamValue pThreshold  = nrmThreshold;
+    ParamValue pRatio      = nrmRatio;
+    ParamValue pKnee       = nrmKnee;
+    ParamValue pMakeup     = nrmMakeup;
+    ParamValue pMix        = nrmMix;
+    bool       pSoftBypass = false;
     
-    ParamValue pZoom  = 2.0 / 6.0;
-    ParamValue pOS = 0.0;
+    ParamValue pZoom       = 2.0 / 6.0;
+    ParamValue pOS         = 0.0;
     
     // VU metering ----------------------------------------------------------------
     LevelEnvelopeFollower VuInputRMS, VuOutputRMS;
