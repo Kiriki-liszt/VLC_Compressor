@@ -71,6 +71,10 @@ Supports Windows, Mac, Linux(same as VSTSDK).
 v1.0.0: intial try.  
 v1.0.1: Latency bypass fix.  
 
+## TODO  
+
+- [ ] vst3sdk/public.sdk/samples/vst/common/logscale.h
+
 ## references
 
 <https://code.videolan.org/videolan/vlc/-/blob/master/modules/audio_filter/compressor.c>  
